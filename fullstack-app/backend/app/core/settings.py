@@ -10,7 +10,20 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 class AppSettings(BaseSettings):
     """Environment-driven application settings."""
 
+    # OpenAI Configuration
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
+    open_ai_model: str = Field(
+        "gpt-4.1",
+        env="OPEN_AI_MODEL",
+        description="Default OpenAI model name for MetaCheck agents",
+    )
+    openai_transcription_model: str = Field(
+        "whisper-1",
+        env="OPENAI_TRANSCRIPTION_MODEL",
+        description="OpenAI transcription model for audio processing",
+    )
+
+    # External API Keys
     google_fact_check_api_key: str | None = Field(None, env="GOOGLE_FACT_CHECK_API_KEY")
     wikipedia_access_token: str | None = Field(None, env="WIKIPEDIA_ACCESS_TOKEN")
 

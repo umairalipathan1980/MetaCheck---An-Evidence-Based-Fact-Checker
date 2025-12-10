@@ -223,6 +223,48 @@ function VerdictReasoning({ reasoning }) {
             <p>{reasoning.decisive_factor}</p>
           </>
         )}
+        {reasoning.decisive_sources?.length ? (
+          <>
+            <p className="mt-2 font-semibold text-slate-900">Decisive sources</p>
+            <ul className="list-disc pl-4">
+              {reasoning.decisive_sources.map((src, idx) => (
+                <li key={idx}>{src}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {reasoning.alternative_verdicts_considered?.length ? (
+          <>
+            <p className="mt-2 font-semibold text-slate-900">Alternatives considered</p>
+            <ul className="list-disc pl-4">
+              {reasoning.alternative_verdicts_considered.map((alt, idx) => (
+                <li key={idx}>{alt}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {reasoning.why_not_alternatives ? (
+          <>
+            <p className="mt-2 font-semibold text-slate-900">Why alternatives were rejected</p>
+            <p>{reasoning.why_not_alternatives}</p>
+          </>
+        ) : null}
+        {reasoning.confidence_reasoning ? (
+          <>
+            <p className="mt-2 font-semibold text-slate-900">Confidence reasoning</p>
+            <p>{reasoning.confidence_reasoning}</p>
+          </>
+        ) : null}
+        {reasoning.confidence_factors?.length ? (
+          <>
+            <p className="mt-2 font-semibold text-slate-900">Confidence factors</p>
+            <ul className="list-disc pl-4">
+              {reasoning.confidence_factors.map((f, idx) => (
+                <li key={idx}>{f}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </div>
     </div>
   )
@@ -242,6 +284,84 @@ function SearchQueries({ queries }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function ContradictionSection({ data }) {
+  if (!data) return null
+  if (!data.detected) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-emerald-700">
+        No contradictions detected among sources.
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <p className="font-semibold">Contradictions detected ({data.severity})</p>
+      {data.description ? <p className="mt-1">{data.description}</p> : null}
+      {data.contradicting_sources?.length ? (
+        <ul className="mt-1 list-disc pl-4">
+          {data.contradicting_sources.map((src, idx) => (
+            <li key={idx}>{src}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
+function SensitivitySection({ data }) {
+  if (!data) return null
+  if (!data.is_sensitive) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        Not identified as a sensitive topic.
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+      <p className="font-semibold">Sensitive topic detected</p>
+      {data.sensitive_categories?.length ? (
+        <p className="mt-1 text-sm text-rose-700">Categories: {data.sensitive_categories.join(', ')}</p>
+      ) : null}
+      {data.reasoning ? <p className="mt-1">{data.reasoning}</p> : null}
+    </div>
+  )
+}
+
+function EscalationSection({ data }) {
+  if (!data) return null
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
+      <p className="font-semibold">
+        Escalation: {data.should_escalate ? 'Required' : 'Not needed'}
+      </p>
+      {data.reasons?.length ? (
+        <ul className="mt-1 list-disc pl-4">
+          {data.reasons.map((reason, idx) => (
+            <li key={idx}>{reason}</li>
+          ))}
+        </ul>
+      ) : null}
+      {data.suggested_actions?.length ? (
+        <>
+          <p className="mt-2 font-semibold">Suggested actions</p>
+          <ul className="list-disc pl-4">
+            {data.suggested_actions.map((action, idx) => (
+              <li key={idx}>{action}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {data.instructor_notes ? (
+        <>
+          <p className="mt-2 font-semibold">Instructor notes</p>
+          <p>{data.instructor_notes}</p>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -276,12 +396,30 @@ export function ClaimDetail({ claimResult, mode = 'basic' }) {
         )}
         <KeySources sources={key_sources} />
         <EvidenceList evidence={evidence_list} sourcesAssessed={metacognitive_detail?.sources_assessed} mode={mode} />
+        {isComprehensive && metacognitive_detail?.contradiction_detection ? (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-slate-800">Contradiction analysis</h4>
+            <ContradictionSection data={metacognitive_detail.contradiction_detection} />
+          </div>
+        ) : null}
+        {isComprehensive && metacognitive_detail?.sensitivity_analysis ? (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-slate-800">Sensitivity analysis</h4>
+            <SensitivitySection data={metacognitive_detail.sensitivity_analysis} />
+          </div>
+        ) : null}
         {isComprehensive && metacognitive_detail?.verdict_reasoning && (
           <VerdictReasoning reasoning={metacognitive_detail.verdict_reasoning} />
         )}
         {isComprehensive && metacognitive_detail?.search_queries && (
           <SearchQueries queries={metacognitive_detail.search_queries} />
         )}
+        {isComprehensive && metacognitive_detail?.escalation_decision ? (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-slate-800">Escalation decision</h4>
+            <EscalationSection data={metacognitive_detail.escalation_decision} />
+          </div>
+        ) : null}
         {isComprehensive && metacognitive_detail?.ai_uncertainties?.length ? (
           <div>
             <h4 className="text-sm font-semibold text-slate-800">AI Uncertainties</h4>
@@ -301,6 +439,27 @@ export function ClaimDetail({ claimResult, mode = 'basic' }) {
               ))}
             </ul>
           </div>
+        ) : null}
+        {isComprehensive && metacognitive_detail?.potential_weaknesses?.length ? (
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800">Potential weaknesses</h4>
+            <ul className="list-disc pl-4 text-sm text-slate-700">
+              {metacognitive_detail.potential_weaknesses.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {isComprehensive && metacognitive_detail?.metacognitive_summary ? (
+          <div>
+            <h4 className="text-sm font-semibold text-slate-800">Metacognitive summary</h4>
+            <p className="text-sm text-slate-700">{metacognitive_detail.metacognitive_summary}</p>
+          </div>
+        ) : null}
+        {isComprehensive && metacognitive_detail?.total_assessment_time ? (
+          <p className="text-xs text-slate-500">
+            Total assessment time: {metacognitive_detail.total_assessment_time.toFixed(1)} seconds
+          </p>
         ) : null}
       </CardContent>
     </Card>

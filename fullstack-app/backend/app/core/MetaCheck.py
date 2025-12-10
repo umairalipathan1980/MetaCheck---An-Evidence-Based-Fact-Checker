@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 import requests
 
 from agents import Agent, WebSearchTool, Runner, ModelSettings, function_tool
+from app.core.settings import get_settings
 
 # Load environment variables from .env file
 try:
@@ -30,6 +31,9 @@ if not os.getenv("GOOGLE_FACT_CHECK_API_KEY"):
 
 if not os.getenv("WIKIPEDIA_ACCESS_TOKEN"):
     print("Info: WIKIPEDIA_ACCESS_TOKEN not found. Wikipedia API will work without authentication.")
+
+settings = get_settings()
+MODEL_NAME = settings.open_ai_model  # Default: gpt-4.1 (configured in settings.py)
 
 
 # ============================================================================
@@ -1135,6 +1139,7 @@ def domain_classification_tool(url: str) -> DomainClassification:
 claim_extractor = Agent(
     name="claim_extractor",
     instructions=extraction_instructions,
+    model=MODEL_NAME,
     output_type=ClaimList,
 )
 
@@ -1142,7 +1147,7 @@ claim_extractor = Agent(
 # 1b. Sensitivity Analyzer Agent
 sensitivity_analyzer = Agent(
     name="sensitivity_analyzer",
-    model="gpt-4.1-2025-04-14",
+    model=MODEL_NAME,
     model_settings=ModelSettings(
         max_completion_tokens=4096,
         temperature=0.1
@@ -1205,6 +1210,7 @@ def wikipedia_search_tool(claim: str) -> str:
 retriever_agent = Agent(
     name="retriever_agent",
     instructions=retriever_instructions,
+    model=MODEL_NAME,
     tools=[WebSearchTool(), wikipedia_search_tool],
 )
 
@@ -1239,6 +1245,7 @@ def google_fact_check_tool(claim: str) -> str:
 fact_check_agent = Agent(
     name="fact_check_agent",
     instructions=fact_check_instructions,
+    model=MODEL_NAME,
     tools=[google_fact_check_tool],
 )
 
@@ -1247,6 +1254,7 @@ fact_check_agent = Agent(
 verifier_agent = Agent(
     name="verifier_agent",
     instructions=verifier_instructions,
+    model=MODEL_NAME,
     output_type=VerificationResult,
 )
 
@@ -1254,7 +1262,7 @@ verifier_agent = Agent(
 # 5. Metacognitive Orchestrator (with direct access to all tools)
 orchestrator = Agent(
     name="metacognitive_orchestrator",
-    model="gpt-4.1-2025-04-14",
+    model=MODEL_NAME,
     model_settings=ModelSettings(
         max_completion_tokens=16384,  # Increased from default ~4096 to handle multiple claims
         temperature=0.1  # Lower temperature for more consistent, deterministic factual outputs
