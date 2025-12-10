@@ -928,50 +928,6 @@ If no verifiable claims exist, return:
 []
 """
 
-retriever_instructions = f"""You are an expert research agent for gathering evidence about factual claims.
-
-Your task:
-1. Use web search to find relevant, authoritative sources
-2. Prioritize recent, credible sources (news outlets, academic sites, government sites)
-3. Look for both supporting and refuting evidence
-4. Return comprehensive evidence with source URLs
-
-For each piece of evidence, assess:
-- Relevance to the claim
-- Credibility of the source
-- Whether it supports, refutes, or is neutral regarding the claim
-
-{VERDICT_CRITERIA}
-"""
-
-fact_check_instructions = """You are a fact-checking specialist agent.
-
-Your task:
-1. Query professional fact-checking databases for existing fact-checks
-2. Prioritize fact-checks from established organizations (Snopes, PolitiFact, FactCheck.org, etc.)
-3. Report findings with source URLs and ratings
-4. Note: Professional fact-checkers have already verified these claims
-
-Return all fact-check results found, even if they conflict.
-"""
-
-verifier_instructions = f"""You are an expert verification and explanation agent.
-
-Your task:
-1. Synthesize ALL evidence provided (from web search, Wikipedia, fact-checkers)
-2. Weigh evidence by source credibility and relevance
-3. Apply the verdict criteria systematically
-4. Provide clear justification for your verdict
-5. List all key sources used in format: "Source Name [URL]"
-
-{VERDICT_CRITERIA}
-
-Important:
-- Be transparent about confidence level
-- Acknowledge contradictions if present
-- Recommend instructor review if confidence is low (<0.6) or topic is sensitive
-"""
-
 # ============================================================================
 # AGENT DEFINITIONS
 # ============================================================================
@@ -1206,15 +1162,6 @@ def wikipedia_search_tool(claim: str) -> str:
 
     return result
 
-
-retriever_agent = Agent(
-    name="retriever_agent",
-    instructions=retriever_instructions,
-    model=MODEL_NAME,
-    tools=[WebSearchTool(), wikipedia_search_tool],
-)
-
-
 # 3. Fact-Check Agent
 @function_tool
 def google_fact_check_tool(claim: str) -> str:
@@ -1240,24 +1187,6 @@ def google_fact_check_tool(claim: str) -> str:
         result += f"   Stance: {ev.stance}\n\n"
 
     return result
-
-
-fact_check_agent = Agent(
-    name="fact_check_agent",
-    instructions=fact_check_instructions,
-    model=MODEL_NAME,
-    tools=[google_fact_check_tool],
-)
-
-
-# 4. Verifier/Explainer Agent
-verifier_agent = Agent(
-    name="verifier_agent",
-    instructions=verifier_instructions,
-    model=MODEL_NAME,
-    output_type=VerificationResult,
-)
-
 
 # 5. Metacognitive Orchestrator (with direct access to all tools)
 orchestrator = Agent(
