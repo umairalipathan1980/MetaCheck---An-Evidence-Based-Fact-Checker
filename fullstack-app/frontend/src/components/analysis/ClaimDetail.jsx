@@ -38,10 +38,11 @@ function KeySources({ sources }) {
   )
 }
 
-function EvidenceList({ evidence, sourcesAssessed }) {
+function EvidenceList({ evidence, sourcesAssessed, mode = 'basic' }) {
   if (!evidence?.length) return <p className="text-sm text-slate-600">No evidence listed.</p>
 
-  // Map sources_assessed details by URL for richer display
+  const isComprehensive = mode === 'comprehensive'
+
   const detailByUrl = {}
   if (sourcesAssessed?.length) {
     sourcesAssessed.forEach((s) => {
@@ -49,6 +50,54 @@ function EvidenceList({ evidence, sourcesAssessed }) {
         detailByUrl[s.url] = s
       }
     })
+  }
+
+  if (!isComprehensive) {
+    return (
+      <div className="space-y-3">
+        {evidence.map((ev, idx) => (
+          <div
+            key={idx}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                className={cn('border', stanceColors[ev.stance] || 'bg-slate-100 text-slate-700 border-slate-200')}
+              >
+                {ev.source_type} | {ev.stance || 'n/a'}
+              </Badge>
+              <span className="rounded-lg bg-white px-2 py-1 text-xs text-slate-600">
+                Cred: {(ev.credibility_score ?? 0).toFixed(2)}
+              </span>
+              <span className="rounded-lg bg-white px-2 py-1 text-xs text-slate-600">
+                Relevance: {(ev.relevance_score ?? 0).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="mt-2">
+              <p className="font-semibold text-slate-900">{ev.source_name}</p>
+              {ev.url ? (
+                <a
+                  href={ev.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-emerald-700 hover:underline break-all"
+                >
+                  {ev.url}
+                </a>
+              ) : null}
+            </div>
+
+            {ev.snippet ? (
+              <div className="mt-2">
+                <p className="text-xs uppercase text-slate-500">Snippet</p>
+                <p className="text-sm text-slate-700">{ev.snippet}</p>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -72,7 +121,7 @@ function EvidenceList({ evidence, sourcesAssessed }) {
               <Badge
                 className={cn('border', stanceColors[ev.stance] || 'bg-slate-100 text-slate-700 border-slate-200')}
               >
-                {ev.source_type} · {ev.stance || 'n/a'}
+                {ev.source_type} | {ev.stance || 'n/a'}
               </Badge>
               <span className="rounded-lg bg-white px-2 py-1 text-xs text-slate-600">
                 Cred: {(ev.credibility_score ?? 0).toFixed(2)}
@@ -128,7 +177,7 @@ function EvidenceList({ evidence, sourcesAssessed }) {
                 <p className="text-xs uppercase text-slate-500">Key Evidence</p>
                 {keyQuotes.map((quote, qIdx) => (
                   <p key={qIdx} className="rounded-xl bg-white px-3 py-2 text-sm text-slate-800">
-                    “{quote}”
+                    {quote}
                   </p>
                 ))}
               </div>
@@ -188,7 +237,7 @@ function SearchQueries({ queries }) {
         {queries.map((q, idx) => (
           <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
             <p className="font-semibold text-slate-900">{q.query_text}</p>
-            <p className="text-xs text-slate-500">Tool: {q.source_tool} · Strategy: {q.search_strategy}</p>
+            <p className="text-xs text-slate-500">Tool: {q.source_tool} | Strategy: {q.search_strategy}</p>
             <p className="mt-1 text-slate-700">{q.query_reasoning}</p>
           </div>
         ))}
@@ -197,9 +246,10 @@ function SearchQueries({ queries }) {
   )
 }
 
-export function ClaimDetail({ claimResult }) {
+export function ClaimDetail({ claimResult, mode = 'basic' }) {
   if (!claimResult) return null
   const { claim, verdict, confidence, justification, key_sources, evidence_list, metacognitive_detail } = claimResult
+  const isComprehensive = mode === 'comprehensive'
 
   return (
     <Card className="border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
@@ -211,20 +261,28 @@ export function ClaimDetail({ claimResult }) {
           <span className="rounded-xl bg-slate-50 px-3 py-1 text-sm text-slate-700">
             Confidence {(confidence ?? 0).toFixed(2)}
           </span>
+          <span className="rounded-xl bg-slate-50 px-3 py-1 text-xs font-semibold uppercase text-slate-600">
+            Mode: {mode}
+          </span>
         </div>
         <CardTitle className="text-xl leading-tight">{claim}</CardTitle>
         <p className="text-sm text-slate-600">{justification}</p>
       </CardHeader>
       <CardContent className="space-y-6">
+        {!isComprehensive && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Basic mode shows essential facts only. Re-run in comprehensive mode to see full metacognitive reasoning.
+          </div>
+        )}
         <KeySources sources={key_sources} />
-        <EvidenceList evidence={evidence_list} sourcesAssessed={metacognitive_detail?.sources_assessed} />
-        {metacognitive_detail?.verdict_reasoning && (
+        <EvidenceList evidence={evidence_list} sourcesAssessed={metacognitive_detail?.sources_assessed} mode={mode} />
+        {isComprehensive && metacognitive_detail?.verdict_reasoning && (
           <VerdictReasoning reasoning={metacognitive_detail.verdict_reasoning} />
         )}
-        {metacognitive_detail?.search_queries && (
+        {isComprehensive && metacognitive_detail?.search_queries && (
           <SearchQueries queries={metacognitive_detail.search_queries} />
         )}
-        {metacognitive_detail?.ai_uncertainties?.length ? (
+        {isComprehensive && metacognitive_detail?.ai_uncertainties?.length ? (
           <div>
             <h4 className="text-sm font-semibold text-slate-800">AI Uncertainties</h4>
             <ul className="list-disc pl-4 text-sm text-slate-700">
@@ -234,7 +292,7 @@ export function ClaimDetail({ claimResult }) {
             </ul>
           </div>
         ) : null}
-        {metacognitive_detail?.assumptions_made?.length ? (
+        {isComprehensive && metacognitive_detail?.assumptions_made?.length ? (
           <div>
             <h4 className="text-sm font-semibold text-slate-800">Assumptions</h4>
             <ul className="list-disc pl-4 text-sm text-slate-700">

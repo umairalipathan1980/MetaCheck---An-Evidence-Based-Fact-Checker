@@ -253,6 +253,7 @@ class FinalAssessment(BaseModel):
     total_claims: int
     claim_results: List[VerificationResult]
     overall_credibility: str
+    mode: Literal["basic", "comprehensive"] = "basic"
     generated_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -601,41 +602,33 @@ class EscalationManager:
 
         Escalation criteria:
         - Low confidence (< 0.6) AND (contradictions OR sensitive topic)
-          - Major contradictions from authoritative sources
-          - Sensitive topic identified by LLM analysis
+        - Major contradictions from authoritative sources
+        - Sensitive topic identified by LLM analysis
         """
-        reasons = []
+        reasons: List[str] = []
         should_escalate = False
 
-        # Check low confidence with contradictions
         if confidence < self.CONFIDENCE_THRESHOLD:
             if contradiction.detected:
                 should_escalate = True
                 reasons.append(f"Low confidence ({confidence:.2f}) combined with contradictory evidence")
-
-            # Check for sensitive topics using LLM analysis
             if sensitivity_analysis and sensitivity_analysis.is_sensitive:
                 should_escalate = True
                 categories_str = ", ".join(sensitivity_analysis.sensitive_categories) if sensitivity_analysis.sensitive_categories else "general"
                 reasons.append(f"Low confidence ({confidence:.2f}) on sensitive topic ({categories_str})")
 
-        # Check for major contradictions regardless of confidence
         if contradiction.detected and contradiction.severity == "major":
             should_escalate = True
-            reasons.append(f"Major contradictions detected between credible sources")
+            reasons.append("Major contradictions detected between credible sources")
 
-        # Check for insufficient evidence on important claims
         if verdict == "INSUFFICIENT_INFORMATION" and len(evidence_list) < 2:
             if sensitivity_analysis and sensitivity_analysis.is_sensitive:
                 should_escalate = True
                 reasons.append("Insufficient evidence for sensitive claim")
 
-        # Generate instructor notes
         instructor_notes = self._generate_instructor_notes(
             claim, verdict, confidence, contradiction, evidence_list, reasons
         )
-
-        # Suggest actions
         suggested_actions = self._suggest_actions(verdict, contradiction, evidence_list)
 
         return EscalationDecision(
@@ -668,18 +661,18 @@ class EscalationManager:
             notes += "\n"
 
         if contradiction.detected:
-            notes += f"Contradiction Analysis:\n"
+            notes += "Contradiction Analysis:\n"
             notes += f"  Severity: {contradiction.severity.upper()}\n"
             notes += f"  {contradiction.description}\n"
-            notes += f"  Contradicting sources:\n"
+            notes += "  Contradicting sources:\n"
             for source in contradiction.contradicting_sources:
                 notes += f"    - {source}\n"
             notes += "\n"
 
-        notes += f"Evidence Summary:\n"
+        notes += "Evidence Summary:\n"
         notes += f"  Total sources: {len(evidence_list)}\n"
 
-        by_type = {}
+        by_type: Dict[str, int] = {}
         for e in evidence_list:
             by_type[e.source_type] = by_type.get(e.source_type, 0) + 1
         for source_type, count in by_type.items():
@@ -694,7 +687,7 @@ class EscalationManager:
         evidence_list: List[Evidence]
     ) -> List[str]:
         """Suggest actions for instructor"""
-        actions = []
+        actions: List[str] = []
 
         if contradiction.detected:
             actions.append("Review contradictory sources directly for nuance")
@@ -1360,17 +1353,26 @@ CRITICAL REQUIREMENTS:
 # MAIN WORKFLOW
 # ============================================================================
 
-async def verify_claims(text: str, verbose: bool = True) -> FinalAssessment:
+async def verify_claims(
+    text: str,
+    verbose: bool = True,
+    mode: Literal["basic", "comprehensive"] = "basic",
+) -> FinalAssessment:
     """
     Main MetaCheck workflow with Phase 2 metacognitive layer.
 
     Args:
         text: Input text to analyze
         verbose: Print progress information
+        mode: "basic" for concise outputs (default) or "comprehensive" for full metacognitive detail
 
     Returns:
         FinalAssessment with all results and metacognitive analysis
     """
+    selected_mode = mode.lower()
+    if selected_mode not in {"basic", "comprehensive"}:
+        raise ValueError(f"Invalid mode '{mode}'. Expected 'basic' or 'comprehensive'.")
+
     if verbose:
         print(f"\n{'='*70}")
         print("MetaCheck - Metacognitive Information Assessment (Phase 2)")
@@ -1398,13 +1400,28 @@ async def verify_claims(text: str, verbose: bool = True) -> FinalAssessment:
 
     result = await Runner.run(
         orchestrator,
-        f"Analyze this text and fact-check all claims with full metacognitive transparency: {text}",
+        (
+            f"MODE: {selected_mode.upper()}.\n"
+            "If mode=BASIC: return only claim, verdict, confidence, a 1-2 sentence justification, "
+            "key_sources (name + URL), and evidence_list with source_name/source_type/url/stance/credibility_score/"
+            "relevance_score. Set metacognitive_steps as [] and metacognitive_detail as null. Skip verbose or "
+            "step-by-step metacognitive narration.\n"
+            "If mode=COMPREHENSIVE: include the full metacognitive detail and transparency required in the system "
+            "instructions.\n\n"
+            f"Analyze this text and fact-check all claims: {text}"
+        ),
         max_turns=30  # Allow enough turns for multiple claims with multiple tool calls each
     )
 
     # Get structured output from orchestrator
     orchestrator_output: OrchestratorOutput = result.final_output
     claim_results = orchestrator_output.claim_results
+
+    # Trim results for basic mode to avoid returning extra reasoning fields
+    if selected_mode == "basic":
+        for cr in claim_results:
+            cr.metacognitive_steps = []
+            cr.metacognitive_detail = None
 
     if verbose:
         print(f"\n{'='*70}")
@@ -1440,7 +1457,7 @@ async def verify_claims(text: str, verbose: bool = True) -> FinalAssessment:
     )
 
     # Display metacognitive analysis for each claim
-    if verbose and claim_results:
+    if verbose and claim_results and selected_mode == "comprehensive":
         print(f"\n{'='*70}")
         print("METACOGNITIVE ANALYSIS (Phase 2)")
         print(f"{'='*70}\n")
@@ -1816,7 +1833,8 @@ async def verify_claims(text: str, verbose: bool = True) -> FinalAssessment:
         input_text=text,
         total_claims=len(claim_results),
         claim_results=claim_results,  # Use the structured VerificationResults
-        overall_credibility=f"Average Confidence: {overall_confidence:.2f}"
+        overall_credibility=f"Average Confidence: {overall_confidence:.2f}",
+        mode=selected_mode,
     )
 
     return assessment

@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -15,6 +15,9 @@ router = APIRouter(prefix="/api", tags=["metacheck"])
 class VerifyRequest(BaseModel):
     text: str = Field(..., description="Input text containing one or more claims")
     verbose: bool = Field(False, description="Enable verbose MetaCheck console logging")
+    mode: Literal["basic", "comprehensive"] = Field(
+        "basic", description="basic for concise output (default), comprehensive for full detail"
+    )
 
 
 @router.get("/health", response_model=HealthStatus, tags=["health"])
@@ -69,7 +72,7 @@ async def verify_claims_api(
         os.environ["WIKIPEDIA_ACCESS_TOKEN"] = settings.wikipedia_access_token
 
     try:
-        return await run_verification(text, verbose=request.verbose)
+        return await run_verification(text, verbose=request.verbose, mode=request.mode)
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover

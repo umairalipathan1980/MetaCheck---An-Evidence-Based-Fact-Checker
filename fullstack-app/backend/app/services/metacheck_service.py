@@ -21,15 +21,20 @@ except Exception as exc:  # pragma: no cover - import-time failure surfaced to A
     raise ImportError(f"Failed to import MetaCheck core: {exc}") from exc
 
 
-async def run_verification(text: str, verbose: bool = False) -> FinalAssessment:
+async def run_verification(
+    text: str,
+    verbose: bool = False,
+    mode: str = "basic",
+) -> FinalAssessment:
     """
     Run the MetaCheck verification workflow.
 
     Args:
         text: Input text containing one or more claims.
         verbose: Whether to enable MetaCheck verbose console output.
+        mode: "basic" for concise output or "comprehensive" for full metacognitive detail.
 
     Returns:
         FinalAssessment containing claim results and metacognitive detail.
     """
-    return await verify_claims(text, verbose=verbose)
+    return await verify_claims(text, verbose=verbose, mode=mode)

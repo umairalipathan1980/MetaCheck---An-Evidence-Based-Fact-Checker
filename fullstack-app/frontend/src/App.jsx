@@ -18,6 +18,7 @@ import { cn } from './lib/utils'
 function App() {
   const [text, setText] = useState('')
   const [verbose, setVerbose] = useState(false)
+  const [mode, setMode] = useState('basic')
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [health, setHealth] = useState(null)
   const [domainConfig, setDomainConfig] = useState(null)
@@ -49,6 +50,8 @@ function App() {
     }
   }, [assessment])
 
+  const activeMode = useMemo(() => assessment?.mode || mode, [assessment?.mode, mode])
+
   const selectedClaim = useMemo(() => {
     if (!assessment?.claim_results?.length) return null
     return assessment.claim_results[selectedIdx]
@@ -56,7 +59,7 @@ function App() {
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    await runVerify({ text, verbose })
+    await runVerify({ text, verbose, mode })
   }
 
   const handleExportJSON = () => {
@@ -167,16 +170,39 @@ function App() {
                       className="min-h-[160px]"
                     />
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                          type="checkbox"
-                          checked={verbose}
-                          onChange={(e) => setVerbose(e.target.checked)}
-                          disabled={status === 'loading'}
-                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-400"
-                        />
-                        Verbose backend logs
-                      </label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={verbose}
+                            onChange={(e) => setVerbose(e.target.checked)}
+                            disabled={status === 'loading'}
+                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-400"
+                          />
+                          Verbose backend logs
+                        </label>
+                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                          <span>Mode:</span>
+                          <div className="flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+                            {['basic', 'comprehensive'].map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setMode(value)}
+                                disabled={status === 'loading'}
+                                className={cn(
+                                  'rounded-full px-3 py-1 text-xs font-semibold capitalize transition',
+                                  mode === value
+                                    ? 'bg-emerald-500 text-white shadow'
+                                    : 'text-slate-600 hover:bg-slate-100'
+                                )}
+                              >
+                                {value}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-3">
                         <Button
                           variant="secondary"
@@ -257,7 +283,11 @@ function App() {
                       <Activity className="h-5 w-5 text-emerald-500" />
                       Claims overview
                     </CardTitle>
-                    <CardDescription>Select a claim to see detailed reasoning.</CardDescription>
+                    <CardDescription>
+                      {activeMode === 'basic'
+                        ? 'Basic mode shows essential facts. Switch to comprehensive for full reasoning.'
+                        : 'Select a claim to see detailed reasoning.'}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-6 lg:grid-cols-3">
                     <div className="space-y-3 lg:col-span-1">
@@ -277,7 +307,7 @@ function App() {
                     </div>
                     <div className="lg:col-span-2">
                       {selectedClaim ? (
-                        <ClaimDetail claimResult={selectedClaim} />
+                        <ClaimDetail claimResult={selectedClaim} mode={activeMode} />
                       ) : (
                         <Card className="border-dashed border-slate-200 bg-slate-50">
                           <CardContent className="py-12 text-center text-slate-500">

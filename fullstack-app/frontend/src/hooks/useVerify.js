@@ -7,12 +7,12 @@ export function useVerify() {
   const [error, setError] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
 
-  const runVerify = useCallback(async ({ text, verbose = false }) => {
+  const runVerify = useCallback(async ({ text, verbose = false, mode = 'basic' }) => {
     const start = performance.now()
     setStatus('loading')
     setError(null)
     try {
-      const data = await postVerify({ text, verbose })
+      const data = await postVerify({ text, verbose, mode })
       setAssessment(data)
       setStatus('success')
     } catch (err) {
