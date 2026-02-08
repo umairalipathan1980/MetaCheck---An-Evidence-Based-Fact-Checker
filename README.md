@@ -1,11 +1,27 @@
 # MetaCheck
 
-MetaCheck is an educational fact-checking tool that makes AI reasoning transparent. It:
+MetaCheck is an educational fact-checking tool designed to help students and educators learn how to evaluate information critically. Unlike commercial fact-checkers, MetaCheck's primary goal is educational transparency — showing students how AI systems verify claims, not just what verdict they reach.
+
+It:
 - Extracts verifiable claims from text
 - Searches web, Wikipedia, and fact-check APIs for evidence
 - Classifies domain credibility via a configurable taxonomy
 - Weighs evidence and issues structured verdicts with confidence
 - Surfaces full metacognitive detail for students (search strategy, stance, uncertainties, assumptions, verdict reasoning)
+
+The tool lets the users first add their own assessment for a verification task, and then use AI to do the same verification, and compare their assessment with AI's assessment.
+
+<img src="images/1.png" width="75%" alt="Add your own assessment for a verification task">
+<p align="center"><em>Add your own assessment for a verification task</em></p>
+
+<img src="images/2.png" width="75%" alt="AI assessment (view 1)">
+<p align="center"><em>AI assessment (view 1)</em></p>
+
+<img src="images/3.png" width="75%" alt="AI assessment (view 2)">
+<p align="center"><em>AI assessment (view 2)</em></p>
+
+<img src="images/4.png" width="75%" alt="Comparison of user vs. AI assessment with feedback">
+<p align="center"><em>Comparison of user vs. AI assessment with feedback</em></p>
 
 Stack: FastAPI backend + React/Vite frontend (Tailwind + shadcn-style components) powered by a modular core engine. Uses standard OpenAI (`OPENAI_API_KEY`) plus optional Google Fact Check and Wikipedia keys.
 
