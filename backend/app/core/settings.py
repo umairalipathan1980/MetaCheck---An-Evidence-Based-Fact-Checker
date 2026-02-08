@@ -29,6 +29,10 @@ class AppSettings(BaseSettings):
     google_fact_check_api_key: str | None = Field(None, env="GOOGLE_FACT_CHECK_API_KEY")
     wikipedia_access_token: str | None = Field(None, env="WIKIPEDIA_ACCESS_TOKEN")
 
+    # Admin Authentication
+    admin_username: str = Field(..., env="ADMIN_USERNAME")
+    admin_password: str = Field(..., env="ADMIN_PASSWORD")
+
     allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173"],
         description="Origins allowed for CORS",

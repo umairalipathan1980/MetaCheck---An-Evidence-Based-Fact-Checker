@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.settings import HealthStatus, get_settings
+from app.core.auth import require_admin
 from app.services.metacheck_service import CONFIG_PATH, FinalAssessment, run_verification, run_claim_extraction
 from app.services.comparison_service import run_comparison_analysis
 from app.core.constants import MAX_TEXT_LENGTH
@@ -137,7 +138,7 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
     }
 
 
-@router.put("/config/settings")
+@router.put("/config/settings", dependencies=[Depends(require_admin)])
 async def update_tool_settings_config(
     request: ToolSettingsUpdateRequest,
     settings=Depends(get_settings),  # noqa: B008
@@ -191,7 +192,7 @@ async def update_tool_settings_config(
     return await get_tool_settings_config(settings=settings)
 
 
-@router.post("/admin/reload-settings")
+@router.post("/admin/reload-settings", dependencies=[Depends(require_admin)])
 async def reload_settings() -> dict[str, Any]:
     """Reload settings modules to apply updated configuration without full restart."""
     try:

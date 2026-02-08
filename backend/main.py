@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router as api_router
+from app.api.auth_routes import router as auth_router
 from app.core.settings import get_settings
 
 
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
         return {"message": "MetaCheck FastAPI backend is running", "status": "healthy"}
 
     app.include_router(api_router)
+    app.include_router(auth_router)
     return app
 
 

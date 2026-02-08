@@ -4,8 +4,9 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
 import { postReloadSettings } from '../../lib/api'
+import { cn } from '../../lib/utils'
 
-function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
+function ModeSettingsTable({ modeLabel, values, ranges, onChange, disabled = false }) {
   return (
     <Card className="border-slate-200">
       <CardHeader>
@@ -35,7 +36,8 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
                     onChange={(event) =>
                       onChange('max_claims_to_verify_per_run', Number(event.target.value))
                     }
-                    className="h-9 rounded-lg px-3 text-sm"
+                    disabled={disabled}
+                    className={cn("h-9 rounded-lg px-3 text-sm", disabled && "bg-slate-100 cursor-not-allowed")}
                   />
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2">
@@ -52,7 +54,8 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
                     max={10}
                     value={values.max_claims_to_extract}
                     onChange={(event) => onChange('max_claims_to_extract', Number(event.target.value))}
-                    className="h-9 rounded-lg px-3 text-sm"
+                    disabled={disabled}
+                    className={cn("h-9 rounded-lg px-3 text-sm", disabled && "bg-slate-100 cursor-not-allowed")}
                   />
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2">{ranges?.max_claims_to_extract || '1-10'}</td>
@@ -67,7 +70,8 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
                     max={5}
                     value={values.max_web_sources}
                     onChange={(event) => onChange('max_web_sources', Number(event.target.value))}
-                    className="h-9 rounded-lg px-3 text-sm"
+                    disabled={disabled}
+                    className={cn("h-9 rounded-lg px-3 text-sm", disabled && "bg-slate-100 cursor-not-allowed")}
                   />
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2">{ranges?.max_sources || '1-5'}</td>
@@ -82,7 +86,8 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
                     max={5}
                     value={values.max_wikipedia_sources}
                     onChange={(event) => onChange('max_wikipedia_sources', Number(event.target.value))}
-                    className="h-9 rounded-lg px-3 text-sm"
+                    disabled={disabled}
+                    className={cn("h-9 rounded-lg px-3 text-sm", disabled && "bg-slate-100 cursor-not-allowed")}
                   />
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2">{ranges?.max_sources || '1-5'}</td>
@@ -97,7 +102,8 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
                     max={5}
                     value={values.max_fact_check_sources}
                     onChange={(event) => onChange('max_fact_check_sources', Number(event.target.value))}
-                    className="h-9 rounded-lg px-3 text-sm"
+                    disabled={disabled}
+                    className={cn("h-9 rounded-lg px-3 text-sm", disabled && "bg-slate-100 cursor-not-allowed")}
                   />
                 </td>
                 <td className="px-3 py-2">{ranges?.max_sources || '1-5'}</td>
@@ -110,7 +116,7 @@ function ModeSettingsTable({ modeLabel, values, ranges, onChange }) {
   )
 }
 
-export function ToolSettings({ settingsConfig, onSave }) {
+export function ToolSettings({ settingsConfig, onSave, isAdmin = false }) {
   const [form, setForm] = useState(null)
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState(null)
@@ -240,17 +246,24 @@ export function ToolSettings({ settingsConfig, onSave }) {
 
   return (
     <div className="space-y-4">
+      {!isAdmin && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          🔒 Login as admin to edit these settings
+        </div>
+      )}
       <ModeSettingsTable
         modeLabel="Basic"
         values={form.basic}
         ranges={settingsConfig.ranges}
         onChange={(key, value) => setModeField('basic', key, value)}
+        disabled={!isAdmin}
       />
       <ModeSettingsTable
         modeLabel="Comprehensive"
         values={form.comprehensive}
         ranges={settingsConfig.ranges}
         onChange={(key, value) => setModeField('comprehensive', key, value)}
+        disabled={!isAdmin}
       />
 
       <Card className="border-slate-200">
@@ -274,7 +287,8 @@ export function ToolSettings({ settingsConfig, onSave }) {
                     <select
                       value={form.performance_cost_controls.model_choice}
                       onChange={(event) => setPerfField('model_choice', event.target.value)}
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                      disabled={!isAdmin}
+                      className={cn("h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white", !isAdmin && "bg-slate-100 cursor-not-allowed")}
                     >
                       {modelChoices.map((m) => (
                         <option key={m} value={m}>
@@ -291,7 +305,8 @@ export function ToolSettings({ settingsConfig, onSave }) {
                     <select
                       value={form.performance_cost_controls.tavily_search_depth}
                       onChange={(event) => setPerfField('tavily_search_depth', event.target.value)}
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                      disabled={!isAdmin}
+                      className={cn("h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white", !isAdmin && "bg-slate-100 cursor-not-allowed")}
                     >
                       <option value="basic">Basic (faster, cheaper)</option>
                       <option value="advanced">Advanced (more thorough, slower)</option>
@@ -310,7 +325,8 @@ export function ToolSettings({ settingsConfig, onSave }) {
                       onChange={(event) =>
                         setPerfField('per_claim_timeout_seconds', Number(event.target.value))
                       }
-                      className="h-9 rounded-lg px-3 text-sm"
+                      disabled={!isAdmin}
+                      className={cn("h-9 rounded-lg px-3 text-sm", !isAdmin && "bg-slate-100 cursor-not-allowed")}
                     />
                   </td>
                   <td className="px-3 py-2">Positive number (seconds)</td>
@@ -320,7 +336,7 @@ export function ToolSettings({ settingsConfig, onSave }) {
           </div>
 
           <div className="mt-4 flex items-center justify-end gap-3">
-            <Button onClick={handleSave} disabled={status === 'saving'}>
+            <Button onClick={handleSave} disabled={status === 'saving' || !isAdmin}>
               {status === 'saving' ? 'Saving...' : 'Save'}
             </Button>
           </div>

@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 export const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 120000, // MetaCheck workflows can take longer; allow up to 120s
+  withCredentials: true, // Send cookies with requests for auth
 })
 
 export async function getHealth() {
@@ -44,5 +45,21 @@ export async function postVerify(payload) {
 
 export async function postCompare(payload) {
   const { data } = await apiClient.post('/api/compare', payload)
+  return data
+}
+
+// Authentication endpoints
+export async function postLogin(username, password) {
+  const { data } = await apiClient.post('/api/auth/login', { username, password })
+  return data
+}
+
+export async function postLogout() {
+  const { data } = await apiClient.post('/api/auth/logout')
+  return data
+}
+
+export async function getAuthStatus() {
+  const { data } = await apiClient.get('/api/auth/status')
   return data
 }

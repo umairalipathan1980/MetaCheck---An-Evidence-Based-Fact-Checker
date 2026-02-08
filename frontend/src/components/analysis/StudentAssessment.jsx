@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader, Plus, Trash2, Edit2, X } from 'lucide-react'
+import { Loader, Plus, Trash2, Edit2, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card'
 import { Textarea } from '../ui/textarea'
@@ -9,6 +9,7 @@ const verdictOptions = ['SUPPORTED', 'REFUTED', 'INSUFFICIENT_INFORMATION', 'CON
 export function StudentAssessmentForm({ claims = [], onSave, disabled = false }) {
   const [editingIndex, setEditingIndex] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [showGuidelines, setShowGuidelines] = useState(false)
 
   // Form state
   const [claimText, setClaimText] = useState('')
@@ -292,10 +293,151 @@ export function StudentAssessmentForm({ claims = [], onSave, disabled = false })
           </CardFooter>
         </Card>
       ) : (
-        <Button onClick={() => setShowForm(true)} disabled={disabled} className="w-full gap-2">
-          <Plus className="h-4 w-4" />
-          Add New Claim
-        </Button>
+        <>
+          <Button onClick={() => setShowForm(true)} disabled={disabled} className="w-full gap-2">
+            <Plus className="h-4 w-4" />
+            Add New Claim
+          </Button>
+
+          {/* Guidelines Section */}
+          <Card className="border-blue-200 bg-blue-50">
+            <button
+              onClick={() => setShowGuidelines(!showGuidelines)}
+              className="w-full px-4 py-3 hover:bg-blue-100 transition-colors flex items-center justify-between text-left"
+            >
+              <h3 className="text-base font-semibold text-blue-900">📋 How to Assess Claims (Guidelines)</h3>
+              {showGuidelines ? (
+                <ChevronDown className="w-5 h-5 text-blue-700" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-blue-700" />
+              )}
+            </button>
+            {showGuidelines && (
+              <div className="px-4 pb-4 space-y-4 text-sm text-blue-900">
+                {/* Step 1: Extract Verifiable Claims */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span>
+                    Extract Verifiable Claims
+                  </h4>
+                  <p className="mb-2 leading-relaxed">Identify statements that can be proven true or false with evidence:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>Verifiable:</strong> "The Eiffel Tower is 330 meters tall" (can check measurements)</li>
+                    <li><strong>Verifiable:</strong> "Biden won the 2020 election" (can verify official results)</li>
+                    <li><strong>Not verifiable:</strong> "The Eiffel Tower is beautiful" (opinion)</li>
+                    <li><strong>Not verifiable:</strong> "Paris is the best city" (subjective)</li>
+                  </ul>
+                  <p className="mt-2 text-xs italic">💡 Look for specific facts, statistics, dates, names, and events</p>
+                </div>
+
+                {/* Step 2: Collect Evidence */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span>
+                    Collect Evidence from Multiple Sources
+                  </h4>
+                  <p className="mb-2 leading-relaxed">Research each claim using diverse, credible sources:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>Search engines:</strong> Google, Bing, DuckDuckGo</li>
+                    <li><strong>Wikipedia:</strong> Good starting point for general facts</li>
+                    <li><strong>Fact-checking sites:</strong> Snopes, FactCheck.org, PolitiFact</li>
+                    <li><strong>Primary sources:</strong> Government data, research papers, official websites</li>
+                    <li><strong>News sources:</strong> Reuters, AP, BBC (check multiple outlets)</li>
+                  </ul>
+                  <p className="mt-2 text-xs italic">⚠️ Avoid relying on a single source. Cross-reference information!</p>
+                </div>
+
+                {/* Step 3: Evaluate Source Credibility */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">3</span>
+                    Evaluate Source Credibility
+                  </h4>
+                  <p className="mb-2 leading-relaxed">Not all sources are equally trustworthy. Ask yourself:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>Authority:</strong> Who wrote this? Are they an expert?</li>
+                    <li><strong>Bias:</strong> Does the source have an agenda or political leaning?</li>
+                    <li><strong>Evidence:</strong> Does it cite original sources or just opinions?</li>
+                    <li><strong>Timeliness:</strong> Is the information current or outdated?</li>
+                    <li><strong>Domain:</strong> .gov, .edu, .org sites are often more reliable than random blogs</li>
+                  </ul>
+                  <p className="mt-2 text-xs italic">🎯 Professional fact-checkers &gt; Academic sources &gt; News outlets &gt; Social media</p>
+                </div>
+
+                {/* Step 4: Choose a Verdict */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">4</span>
+                    Choose a Verdict
+                  </h4>
+                  <p className="mb-2 leading-relaxed">Based on the evidence, select the appropriate verdict:</p>
+                  <div className="space-y-2 ml-4">
+                    <div>
+                      <strong className="text-green-700">✓ SUPPORTED:</strong>
+                      <p className="text-xs">Multiple credible sources confirm the claim. Little to no contradictory evidence.</p>
+                    </div>
+                    <div>
+                      <strong className="text-red-700">✗ REFUTED:</strong>
+                      <p className="text-xs">Credible sources explicitly contradict the claim. Evidence shows it's false.</p>
+                    </div>
+                    <div>
+                      <strong className="text-gray-700">? INSUFFICIENT_INFORMATION:</strong>
+                      <p className="text-xs">Not enough reliable sources found, or sources lack credibility (under 0.7). Cannot verify.</p>
+                    </div>
+                    <div>
+                      <strong className="text-yellow-700">⚠ CONFLICTING_EVIDENCE:</strong>
+                      <p className="text-xs">Credible sources disagree. Some support, some refute. No clear consensus.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 5: Set Confidence Level */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">5</span>
+                    Set Your Confidence Level
+                  </h4>
+                  <p className="mb-2 leading-relaxed">How certain are you about this verdict? (0.0 = no confidence, 1.0 = completely certain)</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>0.9-1.0:</strong> Extremely confident (many high-quality sources agree)</li>
+                    <li><strong>0.7-0.8:</strong> Confident (solid evidence from reliable sources)</li>
+                    <li><strong>0.5-0.6:</strong> Moderately confident (some evidence, but gaps remain)</li>
+                    <li><strong>0.0-0.4:</strong> Low confidence (weak evidence, uncertainty)</li>
+                  </ul>
+                  <p className="mt-2 text-xs italic">💭 Be honest! It's okay to have low confidence if evidence is unclear.</p>
+                </div>
+
+                {/* Step 6: Write Your Reasoning */}
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">6</span>
+                    Write Your Reasoning
+                  </h4>
+                  <p className="mb-2 leading-relaxed">Explain WHY you reached this verdict. Include:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>What evidence did you find?</strong> Summarize key findings</li>
+                    <li><strong>Which sources did you trust most?</strong> Why?</li>
+                    <li><strong>Were there contradictions?</strong> How did you resolve them?</li>
+                    <li><strong>What assumptions did you make?</strong> Any uncertainties?</li>
+                  </ul>
+                  <p className="mt-2 text-xs italic">📝 Good reasoning shows your critical thinking process!</p>
+                </div>
+
+                {/* Tips */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border-2 border-purple-300">
+                  <h4 className="font-bold text-purple-900 mb-2">🎓 Pro Tips</h4>
+                  <ul className="list-disc list-inside space-y-1 ml-4 text-purple-900">
+                    <li>Track your time to see how long fact-checking actually takes</li>
+                    <li>Count how many sources you checked (aim for at least 3-5)</li>
+                    <li>List specific source names (not just "I googled it")</li>
+                    <li>Be skeptical of claims that seem too extreme or emotional</li>
+                    <li>When in doubt, look for what professional fact-checkers say</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </Card>
+        </>
       )}
     </div>
   )

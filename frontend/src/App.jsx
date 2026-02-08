@@ -14,11 +14,15 @@ import { ComparePanel } from './components/analysis/ComparePanel'
 import { ClaimPreview } from './components/analysis/ClaimPreview'
 import { ToolDocumentation } from './components/analysis/ToolDocumentation'
 import { ToolSettings } from './components/analysis/ToolSettings'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { LoginModal } from './components/auth/LoginModal'
 import { useVerify } from './hooks/useVerify'
 import { getDomainConfig, getHealth, getToolSettings, postExtract, putToolSettings } from './lib/api'
 import { cn } from './lib/utils'
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, username, logout } = useAuth()
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const [text, setText] = useState('')
   const [mode, setMode] = useState('basic')
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -118,25 +122,49 @@ function App() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-grid-radial opacity-60" aria-hidden="true" />
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="w-full px-4 pt-16 pb-10">
-          <div className="mx-auto max-w-6xl">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="w-full max-w-4xl mx-auto text-center">
-                <img
-                  src="/metacheck-logo.png"
-                  alt="MetaCheck"
-                  className="mx-auto w-full max-w-4xl drop-shadow-sm"
-                />
-                <p className="mt-8 text-base font-semibold text-slate-700 sm:text-lg md:text-xl">
-                  Do your own assessment, then see how AI weighs evidence and compares with you.
-                </p>
+    <>
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      <div className="relative min-h-screen overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-grid-radial opacity-60" aria-hidden="true" />
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <header className="w-full px-4 pt-16 pb-10">
+            <div className="mx-auto max-w-6xl">
+              <div className="flex items-start justify-end mb-4">
+                {!isAuthenticated ? (
+                  <Button
+                    onClick={() => setShowLoginModal(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    Login as Admin
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-slate-700 font-medium">
+                      Admin: {username}
+                    </span>
+                    <Button onClick={logout} variant="secondary" size="sm">
+                      Logout
+                    </Button>
+                  </div>
+                )}
               </div>
-              {healthError && <p className="text-sm text-rose-600">{healthError}</p>}
-            </div>
-            <div className="mt-12 mb-6 flex flex-wrap gap-3 justify-center">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="w-full max-w-4xl mx-auto text-center">
+                  <img
+                    src="/metacheck-logo.png"
+                    alt="MetaCheck"
+                    className="mx-auto w-full max-w-4xl drop-shadow-sm"
+                  />
+                  <p className="mt-8 text-base font-semibold text-slate-700 sm:text-lg md:text-xl">
+                    Do your own assessment, then see how AI weighs evidence and compares with you.
+                  </p>
+                </div>
+                {healthError && <p className="text-sm text-rose-600">{healthError}</p>}
+              </div>
+              <div className="mt-12 mb-6 flex flex-wrap gap-3 justify-center">
               {[
                 { key: 'your', label: 'Your Assessment' },
                 { key: 'ai', label: 'AI Analysis' },
@@ -170,7 +198,7 @@ function App() {
               >
                 <div className="flex items-center justify-center gap-3 w-full">
                   <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800">Step 1</Badge>
-                  <h2 className="text-xl font-semibold text-slate-900">Your Assessment (optional)</h2>
+                  <h2 className="text-xl font-semibold text-slate-900">Your Assessment</h2>
                 </div>
                 <StudentAssessmentForm
                   claims={studentClaims}
@@ -444,7 +472,11 @@ function App() {
                 </div>
                 <div className="flex justify-center">
                   <div className="w-full max-w-4xl">
-                    <ToolSettings settingsConfig={settingsConfig} onSave={handleSaveToolSettings} />
+                    <ToolSettings
+                      settingsConfig={settingsConfig}
+                      onSave={handleSaveToolSettings}
+                      isAdmin={isAuthenticated}
+                    />
                   </div>
                 </div>
               </motion.section>
@@ -459,10 +491,17 @@ function App() {
         </footer>
       </div>
     </div>
+    </>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
 
 
 
