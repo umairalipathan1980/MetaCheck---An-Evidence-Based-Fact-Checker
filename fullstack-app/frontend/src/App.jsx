@@ -9,23 +9,29 @@ import { Badge } from './components/ui/badge'
 import { ClaimCard } from './components/analysis/ClaimCard'
 import { ClaimDetail } from './components/analysis/ClaimDetail'
 import { DomainLegend } from './components/analysis/DomainLegend'
-import { StudentAssessmentForm, StudentAssessmentSummary } from './components/analysis/StudentAssessment'
+import { StudentAssessmentForm } from './components/analysis/StudentAssessment'
 import { ComparePanel } from './components/analysis/ComparePanel'
+import { ClaimPreview } from './components/analysis/ClaimPreview'
+import { ToolDocumentation } from './components/analysis/ToolDocumentation'
+import { ToolSettings } from './components/analysis/ToolSettings'
 import { useVerify } from './hooks/useVerify'
-import { getDomainConfig, getHealth } from './lib/api'
+import { getDomainConfig, getHealth, getToolSettings, postExtract, putToolSettings } from './lib/api'
 import { cn } from './lib/utils'
 
 function App() {
   const [text, setText] = useState('')
-  const [verbose, setVerbose] = useState(false)
   const [mode, setMode] = useState('basic')
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [health, setHealth] = useState(null)
   const [domainConfig, setDomainConfig] = useState(null)
+  const [settingsConfig, setSettingsConfig] = useState(null)
   const [loadingHealth, setLoadingHealth] = useState(false)
   const [healthError, setHealthError] = useState(null)
-  const [studentAssessment, setStudentAssessment] = useState(null)
-  const [tab, setTab] = useState('your') // your | ai | compare | docs
+  const [studentClaims, setStudentClaims] = useState([])
+  const [tab, setTab] = useState('your') // your | ai | compare | docs | settings
+  const [extractedClaims, setExtractedClaims] = useState(null)
+  const [extractionStatus, setExtractionStatus] = useState('idle') // idle | loading | success | error
+  const [extractionError, setExtractionError] = useState(null)
 
   const { assessment, runVerify, status, error, elapsedMs, summary, reset } = useVerify()
 
@@ -35,6 +41,7 @@ function App() {
         setLoadingHealth(true)
         setHealth(await getHealth())
         setDomainConfig(await getDomainConfig())
+        setSettingsConfig(await getToolSettings())
       } catch (err) {
         setHealthError(err?.message || 'Health check failed')
       } finally {
@@ -59,7 +66,39 @@ function App() {
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    await runVerify({ text, verbose, mode })
+
+    // Validate text length (2,000 chars max)
+    if (text.length > 2000) {
+      setExtractionError('Text exceeds maximum length of 2,000 characters')
+      return
+    }
+
+    // Step 1: Extract claims
+    setExtractionStatus('loading')
+    setExtractionError(null)
+    setExtractedClaims(null)
+    reset() // Clear previous assessment
+
+    try {
+      const data = await postExtract({ text, mode })
+      setExtractedClaims(data)
+      setExtractionStatus('success')
+    } catch (err) {
+      setExtractionError(err?.response?.data?.detail || err.message || 'Claim extraction failed')
+      setExtractionStatus('error')
+    }
+  }
+
+  const handleVerifySelected = async (selectedIndices, selectedClaimTexts = []) => {
+    if (!text.trim() || !selectedIndices.length) return
+
+    // Step 2: Verify selected claims
+    await runVerify({
+      text,
+      mode,
+      selected_claim_indices: selectedIndices,
+      selected_claim_texts: selectedClaimTexts,
+    })
   }
 
   const handleExportJSON = () => {
@@ -71,6 +110,11 @@ function App() {
     link.download = `metacheck_${Date.now()}.json`
     link.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleSaveToolSettings = async (payload) => {
+    const updated = await putToolSettings(payload)
+    setSettingsConfig(updated)
   }
 
   return (
@@ -98,6 +142,7 @@ function App() {
                 { key: 'ai', label: 'AI Analysis' },
                 { key: 'compare', label: 'Compare' },
                 { key: 'docs', label: 'Documentation' },
+                { key: 'settings', label: 'Settings' },
               ].map((item) => (
                 <Button
                   key={item.key}
@@ -128,14 +173,10 @@ function App() {
                   <h2 className="text-xl font-semibold text-slate-900">Your Assessment (optional)</h2>
                 </div>
                 <StudentAssessmentForm
-                  onSave={(data) => setStudentAssessment(data)}
-                  onClear={() => setStudentAssessment(null)}
-                  initial={studentAssessment}
+                  claims={studentClaims}
+                  onSave={(claims) => setStudentClaims(claims)}
                   disabled={status === 'loading'}
                 />
-                {studentAssessment && (
-                  <StudentAssessmentSummary assessment={studentAssessment} />
-                )}
               </motion.section>
             )}
 
@@ -162,25 +203,23 @@ function App() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Textarea
-                      value={text}
-                      onChange={(event) => setText(event.target.value)}
-                      placeholder="Example: Donald Trump increased military recruitment in© 2025. COVID-19 vaccines are safe."
-                      disabled={status === 'loading'}
-                      className="min-h-[160px]"
-                    />
+                    <div className="space-y-1">
+                      <Textarea
+                        value={text}
+                        onChange={(event) => setText(event.target.value)}
+                        placeholder="Example: Donald Trump increased military recruitment in 2025. COVID-19 vaccines are safe."
+                        disabled={status === 'loading'}
+                        className="min-h-[160px]"
+                      />
+                      <div className="flex justify-between text-xs text-slate-500">
+                        <span>Max 2,000 characters</span>
+                        <span className={text.length > 2000 ? 'text-red-600 font-semibold' : text.length > 2000 ? 'text-amber-600' : ''}>
+                          {text.length} / 2,000
+                        </span>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex flex-wrap items-center gap-3">
-                        <label className="flex items-center gap-2 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={verbose}
-                            onChange={(e) => setVerbose(e.target.checked)}
-                            disabled={status === 'loading'}
-                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-400"
-                          />
-                          Verbose backend logs
-                        </label>
                         <div className="flex items-center gap-2 text-sm text-slate-700">
                           <span>Mode:</span>
                           <div className="flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
@@ -209,21 +248,29 @@ function App() {
                           onClick={() => {
                             setText('')
                             reset()
+                            setExtractedClaims(null)
+                            setExtractionStatus('idle')
+                            setExtractionError(null)
                           }}
-                          disabled={status === 'loading'}
+                          disabled={status === 'loading' || extractionStatus === 'loading'}
                         >
                           Clear
                         </Button>
-                        <Button onClick={handleSubmit} disabled={status === 'loading' || !text.trim()} className="gap-2">
-                          {status === 'loading' ? (
+                        <Button onClick={handleSubmit} disabled={status === 'loading' || extractionStatus === 'loading' || !text.trim()} className="gap-2">
+                          {extractionStatus === 'loading' ? (
                             <>
                               <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
-                              Checking...
+                              Extracting Claims...
+                            </>
+                          ) : status === 'loading' ? (
+                            <>
+                              <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              Verifying...
                             </>
                           ) : (
                             <>
                               <Target className="h-4 w-4" aria-hidden="true" />
-                              Run MetaCheck
+                              Extract Claims
                             </>
                           )}
                         </Button>
@@ -240,7 +287,22 @@ function App() {
                           {error}
                         </motion.div>
                       )}
+                      {extractionError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                        >
+                          {extractionError}
+                        </motion.div>
+                      )}
                     </AnimatePresence>
+                    {extractionStatus === 'success' && extractedClaims?.total_extracted === 0 && (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                        No verifiable claims found in the text.
+                      </div>
+                    )}
                     {status === 'success' && assessment?.claim_results?.length === 0 && (
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                         No verifiable claims found.
@@ -276,6 +338,15 @@ function App() {
                     </CardFooter>
                   )}
                 </Card>
+
+                {extractionStatus === 'success' && extractedClaims && extractedClaims.total_extracted > 0 && (
+                  <ClaimPreview
+                    extractedData={extractedClaims}
+                    onVerifySelected={handleVerifySelected}
+                    mode={mode}
+                    disabled={status === 'loading'}
+                  />
+                )}
 
                 <Card className="border-slate-200">
                   <CardHeader>
@@ -331,7 +402,7 @@ function App() {
                   <Badge className="border border-purple-200 bg-purple-50 text-purple-800">Step 4</Badge>
                   <h2 className="text-xl font-semibold text-slate-900">Compare</h2>
                 </div>
-                <ComparePanel studentAssessment={studentAssessment} aiResult={assessment} />
+                <ComparePanel studentClaims={studentClaims} aiResult={assessment} />
               </motion.section>
             )}
 
@@ -344,18 +415,37 @@ function App() {
               >
                 <div className="mb-4 flex items-center justify-center gap-3 w-full">
                   <Badge className="border border-slate-200 bg-slate-50 text-slate-800">Docs</Badge>
-                  <h2 className="text-xl font-semibold text-slate-900">Domain categories</h2>
+                  <h2 className="text-xl font-semibold text-slate-900">Tool documentation</h2>
                 </div>
                 <div className="flex justify-center">
                   <Card className="w-full max-w-4xl border-slate-200">
                     <CardHeader>
-                      <CardTitle className="text-lg">Domain credibility taxonomy</CardTitle>
-                      <CardDescription>How MetaCheck scores domains from config.json.</CardDescription>
+                      <CardTitle className="text-lg">Documentation</CardTitle>
+                      <CardDescription>How to use MetaCheck and how scoring works.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <DomainLegend categories={domainConfig?.categories} />
+                    <CardContent className="space-y-4">
+                      <ToolDocumentation categories={domainConfig?.categories} />
                     </CardContent>
                   </Card>
+                </div>
+              </motion.section>
+            )}
+
+            {tab === 'settings' && (
+              <motion.section
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="space-y-4"
+              >
+                <div className="mb-4 flex items-center justify-center gap-3 w-full">
+                  <Badge className="border border-slate-200 bg-slate-50 text-slate-800">Settings</Badge>
+                  <h2 className="text-xl font-semibold text-slate-900">Tool settings</h2>
+                </div>
+                <div className="flex justify-center">
+                  <div className="w-full max-w-4xl">
+                    <ToolSettings settingsConfig={settingsConfig} onSave={handleSaveToolSettings} />
+                  </div>
                 </div>
               </motion.section>
             )}

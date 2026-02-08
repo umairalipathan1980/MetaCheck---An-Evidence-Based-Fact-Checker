@@ -312,60 +312,6 @@ function ContradictionSection({ data }) {
   )
 }
 
-function SensitivitySection({ data }) {
-  if (!data) return null
-  if (!data.is_sensitive) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-        Not identified as a sensitive topic.
-      </div>
-    )
-  }
-  return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-      <p className="font-semibold">Sensitive topic detected</p>
-      {data.sensitive_categories?.length ? (
-        <p className="mt-1 text-sm text-rose-700">Categories: {data.sensitive_categories.join(', ')}</p>
-      ) : null}
-      {data.reasoning ? <p className="mt-1">{data.reasoning}</p> : null}
-    </div>
-  )
-}
-
-function EscalationSection({ data }) {
-  if (!data) return null
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-      <p className="font-semibold">
-        Escalation: {data.should_escalate ? 'Required' : 'Not needed'}
-      </p>
-      {data.reasons?.length ? (
-        <ul className="mt-1 list-disc pl-4">
-          {data.reasons.map((reason, idx) => (
-            <li key={idx}>{reason}</li>
-          ))}
-        </ul>
-      ) : null}
-      {data.suggested_actions?.length ? (
-        <>
-          <p className="mt-2 font-semibold">Suggested actions</p>
-          <ul className="list-disc pl-4">
-            {data.suggested_actions.map((action, idx) => (
-              <li key={idx}>{action}</li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-      {data.instructor_notes ? (
-        <>
-          <p className="mt-2 font-semibold">Instructor notes</p>
-          <p>{data.instructor_notes}</p>
-        </>
-      ) : null}
-    </div>
-  )
-}
-
 export function ClaimDetail({ claimResult, mode = 'basic' }) {
   if (!claimResult) return null
   const { claim, verdict, confidence, justification, key_sources, evidence_list, metacognitive_detail } = claimResult
@@ -402,24 +348,12 @@ export function ClaimDetail({ claimResult, mode = 'basic' }) {
             <ContradictionSection data={metacognitive_detail.contradiction_detection} />
           </div>
         ) : null}
-        {isComprehensive && metacognitive_detail?.sensitivity_analysis ? (
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-slate-800">Sensitivity analysis</h4>
-            <SensitivitySection data={metacognitive_detail.sensitivity_analysis} />
-          </div>
-        ) : null}
         {isComprehensive && metacognitive_detail?.verdict_reasoning && (
           <VerdictReasoning reasoning={metacognitive_detail.verdict_reasoning} />
         )}
         {isComprehensive && metacognitive_detail?.search_queries && (
           <SearchQueries queries={metacognitive_detail.search_queries} />
         )}
-        {isComprehensive && metacognitive_detail?.escalation_decision ? (
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-slate-800">Escalation decision</h4>
-            <EscalationSection data={metacognitive_detail.escalation_decision} />
-          </div>
-        ) : null}
         {isComprehensive && metacognitive_detail?.ai_uncertainties?.length ? (
           <div>
             <h4 className="text-sm font-semibold text-slate-800">AI Uncertainties</h4>

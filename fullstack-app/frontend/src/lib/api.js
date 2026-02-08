@@ -17,7 +17,32 @@ export async function getDomainConfig() {
   return data
 }
 
+export async function getToolSettings() {
+  const { data } = await apiClient.get('/api/config/settings')
+  return data
+}
+
+export async function putToolSettings(payload) {
+  const { data } = await apiClient.put('/api/config/settings', payload)
+  return data
+}
+
+export async function postReloadSettings() {
+  const { data } = await apiClient.post('/api/admin/reload-settings')
+  return data
+}
+
+export async function postExtract(payload) {
+  const { data } = await apiClient.post('/api/extract', payload)
+  return data
+}
+
 export async function postVerify(payload) {
   const { data } = await apiClient.post('/api/verify', payload)
+  return data
+}
+
+export async function postCompare(payload) {
+  const { data } = await apiClient.post('/api/compare', payload)
   return data
 }

@@ -14,6 +14,10 @@ const colorPalette = [
 export function DomainLegend({ categories }) {
   if (!categories) return null
   const entries = Object.entries(categories)
+  const toSentenceCaseLabel = (key) => {
+    const normalized = key.replace(/_/g, ' ').trim().toLowerCase()
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+  }
   return (
     <Card className="border-slate-200">
       <CardHeader>
@@ -25,7 +29,7 @@ export function DomainLegend({ categories }) {
             key={key}
             className={`rounded-2xl border px-3 py-2 ${colorPalette[idx % colorPalette.length]}`}
           >
-            <p className="font-semibold">{key}</p>
+            <p className="font-semibold">{toSentenceCaseLabel(key)}</p>
             <p className="text-xs opacity-80">{value.description}</p>
             <p className="text-xs mt-1">Score: {value.score}</p>
           </div>

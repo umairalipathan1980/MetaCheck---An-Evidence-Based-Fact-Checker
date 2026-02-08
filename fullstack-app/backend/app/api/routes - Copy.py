@@ -33,10 +33,6 @@ class VerifyRequest(BaseModel):
         None,
         description="Optional list of claim indices to verify (0-indexed). If not provided, all claims will be verified."
     )
-    selected_claim_texts: Optional[list[str]] = Field(
-        None,
-        description="Optional list of pre-extracted claim texts selected for verification."
-    )
 
 
 class StudentClaim(BaseModel):
@@ -58,9 +54,6 @@ class CompareRequest(BaseModel):
 class ModeSettingsPayload(BaseModel):
     max_claims_to_verify_per_run: int = Field(..., ge=1, le=5)
     max_claims_to_extract: int = Field(..., ge=1, le=10)
-    max_web_sources: int = Field(..., ge=1, le=5)
-    max_wikipedia_sources: int = Field(..., ge=1, le=5)
-    max_fact_check_sources: int = Field(..., ge=1, le=5)
 
 
 class PerformanceSettingsPayload(BaseModel):
@@ -107,14 +100,10 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
         "ranges": {
             "max_claims_to_verify_per_run": "1-5",
             "max_claims_to_extract": "1-10",
-            "max_sources": "1-5",
         },
         "basic": {
             "max_claims_to_verify_per_run": int(basic.get("max_claims_to_verify_per_run", 5)),
             "max_claims_to_extract": int(basic.get("max_claims_to_extract", 10)),
-            "max_web_sources": int(basic.get("max_web_sources", 3)),
-            "max_wikipedia_sources": int(basic.get("max_wikipedia_sources", 2)),
-            "max_fact_check_sources": int(basic.get("max_fact_check_sources", 2)),
             "model_choice_current": model_choice,
             "model_choices": allowed_models,
             "per_claim_timeout_seconds": timeout_seconds,
@@ -122,9 +111,6 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
         "comprehensive": {
             "max_claims_to_verify_per_run": int(comprehensive.get("max_claims_to_verify_per_run", 5)),
             "max_claims_to_extract": int(comprehensive.get("max_claims_to_extract", 10)),
-            "max_web_sources": int(comprehensive.get("max_web_sources", 5)),
-            "max_wikipedia_sources": int(comprehensive.get("max_wikipedia_sources", 3)),
-            "max_fact_check_sources": int(comprehensive.get("max_fact_check_sources", 3)),
             "model_choice_current": model_choice,
             "model_choices": allowed_models,
             "per_claim_timeout_seconds": timeout_seconds,
@@ -326,19 +312,13 @@ async def verify_claims_api(
         os.environ["WIKIPEDIA_ACCESS_TOKEN"] = settings.wikipedia_access_token
 
     try:
-        # Validate selected claims if provided
-        if request.selected_claim_indices is not None or request.selected_claim_texts is not None:
+        # Validate selected claim indices if provided
+        if request.selected_claim_indices is not None:
             file_settings = load_tool_settings()
             max_claims = int(
                 file_settings["verification_scope"][request.mode]["max_claims_to_verify_per_run"]
             )
-            selected_count = 0
-            if request.selected_claim_texts is not None:
-                selected_count = len([c for c in request.selected_claim_texts if c])
-            elif request.selected_claim_indices is not None:
-                selected_count = len(request.selected_claim_indices)
-
-            if selected_count > max_claims:
+            if len(request.selected_claim_indices) > max_claims:
                 raise HTTPException(
                     status_code=422,
                     detail=f"Cannot verify more than {max_claims} claims in {request.mode} mode"
@@ -347,8 +327,7 @@ async def verify_claims_api(
         return await run_verification(
             text,
             mode=request.mode,
-            selected_claim_indices=request.selected_claim_indices,
-            selected_claim_texts=request.selected_claim_texts,
+            selected_claim_indices=request.selected_claim_indices
         )
     except HTTPException:
         raise

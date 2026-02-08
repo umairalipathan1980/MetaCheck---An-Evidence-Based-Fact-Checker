@@ -1,0 +1,27 @@
+{
+  "verification_scope": {
+    "basic": {
+      "max_claims_to_verify_per_run": 5,
+      "max_claims_to_extract": 10,
+      "max_web_sources": 3,
+      "max_wikipedia_sources": 2,
+      "max_fact_check_sources": 2
+    },
+    "comprehensive": {
+      "max_claims_to_verify_per_run": 3,
+      "max_claims_to_extract": 3,
+      "max_web_sources": 3,
+      "max_wikipedia_sources": 2,
+      "max_fact_check_sources": 2
+    }
+  },
+  "performance_cost_controls": {
+    "model_choice": "gpt-5.1",
+    "allowed_models": [
+      "gpt-5.1",
+      "gpt-4.1-mini",
+      "gpt-5-mini"
+    ],
+    "per_claim_timeout_seconds": 90.0
+  }
+}

@@ -2,9 +2,11 @@ from functools import lru_cache
 from pathlib import Path
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
+from app.core.tool_settings import load_tool_settings
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+TOOL_SETTINGS = load_tool_settings()
 
 
 class AppSettings(BaseSettings):
@@ -13,7 +15,7 @@ class AppSettings(BaseSettings):
     # OpenAI Configuration
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
     open_ai_model: str = Field(
-        "gpt-4.1",
+        TOOL_SETTINGS["performance_cost_controls"]["model_choice"],
         env="OPEN_AI_MODEL",
         description="Default OpenAI model name for MetaCheck agents",
     )
