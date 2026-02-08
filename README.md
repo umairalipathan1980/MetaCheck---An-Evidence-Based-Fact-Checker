@@ -11,17 +11,25 @@ It:
 
 The tool lets the users first add their own assessment for a verification task, and then use AI to do the same verification, and compare their assessment with AI's assessment.
 
-<img src="images/1.png" width="75%" alt="Add your own assessment for a verification task">
-<p align="center"><em>Add your own assessment for a verification task</em></p>
+<p align="center">
+  <img src="images/1.png" width="75%" alt="Add your own assessment for a verification task"><br>
+  <em>Add your own assessment for a verification task</em>
+</p>
 
-<img src="images/2.png" width="75%" alt="AI assessment (view 1)">
-<p align="center"><em>AI assessment (view 1)</em></p>
+<p align="center">
+  <img src="images/2.png" width="75%" alt="AI assessment (view 1)"><br>
+  <em>AI assessment (view 1)</em>
+</p>
 
-<img src="images/3.png" width="75%" alt="AI assessment (view 2)">
-<p align="center"><em>AI assessment (view 2)</em></p>
+<p align="center">
+  <img src="images/3.png" width="75%" alt="AI assessment (view 2)"><br>
+  <em>AI assessment (view 2)</em>
+</p>
 
-<img src="images/4.png" width="75%" alt="Comparison of user vs. AI assessment with feedback">
-<p align="center"><em>Comparison of user vs. AI assessment with feedback</em></p>
+<p align="center">
+  <img src="images/4.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
+  <em>Comparison of user vs. AI assessment with feedback</em>
+</p>
 
 Stack: FastAPI backend + React/Vite frontend (Tailwind + shadcn-style components) powered by a modular core engine. Uses standard OpenAI (`OPENAI_API_KEY`) plus optional Google Fact Check and Wikipedia keys.
 
