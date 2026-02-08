@@ -6,7 +6,7 @@ Verdicts displayed: `SUPPORTED`, `REFUTED`, `INSUFFICIENT_INFORMATION`, `CONFLIC
 
 ## Setup
 
-1. `cd fullstack-app/frontend`
+1. `cd frontend`
 2. Create `.env` with `VITE_API_URL=http://localhost:8000` (or your backend URL)
 3. Install deps: `npm install`
 4. Run dev server: `npm run dev` (defaults to `http://localhost:5173`)

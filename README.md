@@ -14,7 +14,7 @@ Verdicts: `SUPPORTED`, `REFUTED`, `INSUFFICIENT_INFORMATION`, `CONFLICTING_EVIDE
 ## Architecture
 
 ```
-fullstack-app/
+MetaCheck/
 ├── backend/                    # FastAPI Backend
 │   ├── app/
 │   │   ├── core/              # Core MetaCheck Engine (modular)
@@ -25,16 +25,18 @@ fullstack-app/
 │   │   │   ├── clients.py     # API clients (Google Fact Check, Wikipedia)
 │   │   │   ├── analysis.py    # MetacognitiveTracker
 │   │   │   ├── domain.py      # Domain classification logic
-│   │   │   ├── tools.py       # Function tools for agents
+│   │   │   ├── tools.py       # Function tools for agents (parallel evidence gathering)
 │   │   │   ├── agents.py      # Agent definitions (orchestrator, extractors)
-│   │   │   ├── workflow.py    # Main verify_claims function
+│   │   │   ├── workflow.py    # Main verify_claims function (parallel agent execution)
 │   │   │   └── settings.py    # Environment configuration
 │   │   ├── config/
-│   │   │   └── config.json    # Domain credibility taxonomy
+│   │   │   ├── config.json    # Domain credibility taxonomy
+│   │   │   └── settings.json  # Runtime configurable settings
 │   │   ├── api/
 │   │   │   └── routes.py      # FastAPI endpoints
 │   │   └── services/
-│   │       └── metacheck_service.py  # Service layer wrapper
+│   │       ├── metacheck_service.py  # Service layer wrapper
+│   │       └── comparison_service.py # Comparison analysis (direct LLM call)
 │   ├── main.py                # FastAPI app entry point
 │   └── requirements.txt
 │
@@ -69,33 +71,53 @@ fullstack-app/
 │   • Display all extracted claims with worthiness scores         │
 │   • Paginated view: 5 claims per page with prev/next buttons    │
 │   • User selects which claims to verify (checkbox UI)           │
-│   • Limits: 8 claims (basic mode) | 5 claims (comprehensive)    │
+│   • Limits: 5 basic | 3 comprehensive (configurable)            │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                 ┌────────────────┼────────────────┐
                 ▼                ▼                ▼
-          ┌─────────┐      ┌─────────┐      ┌─────────┐
-          │ Claim 1 │      │ Claim 2 │      │ Claim N │
-          └─────────┘      └─────────┘      └─────────┘
+       ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+       │Verification │  │Verification │  │Verification │
+       │  Agent 1    │  │  Agent 2    │  │  Agent N    │
+       └─────────────┘  └─────────────┘  └─────────────┘
                 │                │                │
 ┌───────────────┴────────────────┴────────────────┴───────────────┐
-│         STEP 3: Parallel Orchestrator Agents                    │
-│         (One orchestrator per claim, max 5 concurrent)          │
+│   STEP 3: Parallel Verification (N agents run concurrently)     │
 │                                                                 │
-│   Each orchestrator has ALL tools:                              │
-│   ┌─────────────────┐ ┌──────────────┐ ┌────────────────┐       │
-│   │  WebSearchTool  │ │  Wikipedia   │ │  Google Fact   │       │
-│   │  (OpenAI)       │ │  Search      │ │  Check API     │       │
-│   └────────┬────────┘ └─── ───┬──────┘ └───── ──┬───────┘       │
-│            └──────────────────┼─────────────────┘               │
-│                               ▼                                 │
-│                    ┌──────────────────────┐                     │
-│                    │ domain_classification│                     │
-│                    │       _tool          │                     │
-│                    └──────────────────────┘                     │
+│   Each agent gathers evidence using ALL tools in PARALLEL:      │
 │                                                                 │
-│   Agent calls tools sequentially, sees ALL evidence,            │
-│   applies VERDICT_CRITERIA, outputs VerificationResult          │
+│              ┌─────────────────┐                                │
+│              │  Tavily Web     │                                │
+│          ┌──▶│  Search         │──┐                             │
+│          │   └─────────────────┘  │                             │
+│          │                        │                             │
+│          │   ┌─────────────────┐  │                             │
+│  PARALLEL├──▶│  Wikipedia      │──┤                             │
+│   CALL   │   │  Search         │  │                             │
+│          │   └─────────────────┘  │                             │
+│          │                        │                             │
+│          │   ┌─────────────────┐  │                             │
+│          └──▶│ Google Fact     │──┘                             │
+│              │ Check API       │                                │
+│              └─────────────────┘                                │
+│                        │                                        │
+│                        ▼                                        │
+│             ┌─────────────────────┐                             │
+│             │ All evidence        │                             │
+│             │ gathered in parallel│                             │
+│             └─────────────────────┘                             │
+│                        │                                        │
+│                        ▼                                        │
+│             ┌─────────────────────┐                             │
+│             │ Apply domain        │                             │
+│             │ classification &    │                             │
+│             │ VERDICT_CRITERIA    │                             │
+│             └─────────────────────┘                             │
+│                        │                                        │
+│                        ▼                                        │
+│             ┌─────────────────────┐                             │
+│             │ VerificationResult  │                             │
+│             └─────────────────────┘                             │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -110,26 +132,30 @@ fullstack-app/
 
 **Key Points:**
 - **Two-step workflow**: Extract → Select → Verify (user control over which claims to verify)
-- **Claims run in parallel** (bounded by semaphore, default: 5 concurrent)
-- **Tools run sequentially** within each orchestrator (agent-controlled)
-- **Orchestrator sees ALL evidence** before making verdict decision
+- **Two levels of parallelism**:
+  1. **Agent-level**: N verification agents run concurrently (bounded by semaphore, default max: 5)
+  2. **Tool-level**: Within each agent, Tavily + Wikipedia + Google Fact Check gather evidence in parallel
+- **Each agent sees ALL evidence** before applying VERDICT_CRITERIA to make final verdict
 - Verdicts: `SUPPORTED`, `REFUTED`, `INSUFFICIENT_INFORMATION`, `CONFLICTING_EVIDENCE`
 
 ## Main Components
 
-- **Core Engine (`backend/app/core/`)**: Modular multi-agent orchestration system
+- **Core Engine (`backend/app/core/`)**: Modular multi-agent orchestration system with dual-level parallelism
   - `models.py`: 16 Pydantic models for claims, evidence, verdicts, metacognitive detail
-  - `agents.py`: Agent definitions (claim_extractor, orchestrator)
-  - `workflow.py`: Main `verify_claims()` async function
+  - `agents.py`: Agent definitions (claim_extractor, verification orchestrator)
+  - `workflow.py`: Parallel verification workflow - spawns N concurrent agents (asyncio.gather)
+  - `tools.py`: Parallel evidence gathering tools (Tavily + Wikipedia + Google Fact Check run concurrently)
   - `domain.py`: Config-driven domain credibility classification
   - `analysis.py`: MetacognitiveTracker
   - `clients.py`: GoogleFactCheckClient, WikipediaClient
 
-- **Domain Taxonomy (`backend/app/config/config.json`)**: Credibility scores and categories for domain classification (0.50-0.85 range)
+- **Configuration System**:
+  - `backend/app/config/config.json`: Domain credibility taxonomy (0.50-0.85 range)
+  - `backend/app/config/settings.json`: Runtime configurable settings (claim limits, source limits, model, timeouts, Tavily search depth)
 
-- **Backend (`backend/`)**: FastAPI service exposing health, domain-config, and verification APIs
+- **Backend (`backend/`)**: FastAPI service with automatic module reload on settings changes
 
-- **Frontend (`frontend/`)**: Student-facing UI for optional self-assessment, AI analysis, comparison, and documentation
+- **Frontend (`frontend/`)**: React UI with Settings panel, student self-assessment, AI analysis, and concise comparison feedback
 
 ## Search Status Tracking
 
@@ -147,8 +173,8 @@ This transparency helps students understand when API keys are missing or searche
 
 ### 1. Backend
 ```bash
-cd fullstack-app/backend
-# Create .env (see backend/.env.example)
+cd backend
+# Create .env (see .env.example)
 # Required: OPENAI_API_KEY
 # Optional: GOOGLE_FACT_CHECK_API_KEY, WIKIPEDIA_ACCESS_TOKEN
 
@@ -162,7 +188,7 @@ Health check: `http://localhost:8000/api/health`
 
 ### 2. Frontend
 ```bash
-cd fullstack-app/frontend
+cd frontend
 # Create .env with VITE_API_URL=http://localhost:8000
 
 npm install

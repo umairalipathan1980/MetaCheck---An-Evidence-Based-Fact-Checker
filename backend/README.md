@@ -89,7 +89,7 @@ This enables runtime configuration changes without server restart.
 
 ## Setup
 
-1. `cd fullstack-app/backend`
+1. `cd backend`
 
 2. Create `.env` (see `.env.example`):
    - `OPENAI_API_KEY` (required)
