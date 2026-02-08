@@ -219,14 +219,89 @@ npm install
 npm run dev  # default: http://localhost:5173
 ```
 
-## Frontend Highlights
+## How to Use
 
-- **Your Assessment**: Students create multiple claims with verdicts, confidence, reasoning, and sources
-- **AI Analysis**: Two-step workflow with claim preview and selection:
-  - Step 1: Extract claims from text (max 2,000 characters)
-  - Step 2: Preview extracted claims with worthiness scores (5 per page, paginated navigation)
-  - Step 3: Select which claims to verify (checkbox UI)
-  - Step 4: View verification results with detailed evidence and metacognition
-- **Compare**: Side-by-side student vs AI verdicts/confidence/sources with concise AI feedback (summary + areas for improvement)
-- **Documentation**: In-app user guide (workflow, modes, verdicts, weighting, limits) plus domain taxonomy reference
+MetaCheck is designed for **educational learning**, not just quick fact-checking. The most effective way to develop critical thinking skills is to follow the complete three-step learning sequence:
+
+### Step 1: Create Your Assessment First
+
+**Tab: "Your Assessment"**
+
+Start here before using AI analysis:
+
+- Read the text you want to fact-check
+- Manually identify verifiable claims (statements that can be proven true or false)
+- Research each claim using search engines, Wikipedia, fact-checking sites, etc.
+- For each claim, create your assessment:
+  - **Claim text**: The specific statement you're verifying
+  - **Verdict**: Your conclusion (SUPPORTED, REFUTED, INSUFFICIENT_INFORMATION, or CONFLICTING_EVIDENCE)
+  - **Confidence**: How sure are you? (0-100%)
+  - **Reasoning**: Explain why you reached this verdict
+  - **Sources**: List the evidence sources you consulted (with URLs)
+  - **Time spent**: Track how long it took you to verify this claim
+
+### Step 2: Run AI Analysis
+
+**Tab: "AI Analysis"**
+
+After completing your own assessment, let MetaCheck analyze the same text:
+
+1. **Extract Claims** (max 2,000 characters of input text)
+   - AI automatically identifies verifiable, falsifiable claims
+   - Filters out opinions, common knowledge, and vague statements
+   - Splits compound claims into atomic statements
+   - Assigns worthiness scores to help prioritize verification
+
+2. **Preview & Select Claims** (paginated view: 5 claims per page)
+   - Review all extracted claims with their worthiness scores
+   - Select which claims to verify using checkboxes
+   - Limits: 5 claims in basic mode, 3 in comprehensive mode (configurable via Settings)
+
+3. **Choose Mode**:
+   - **Basic Mode (Fast and concise)**: Concise output with verdicts, confidence, and key sources
+   - **Comprehensive Mode (Takes longer)**: Full metacognitive detail showing how the AI reasoned through the verification (search strategies, source assessments, uncertainties, assumptions, verdict logic)
+
+4. **View Results**: Each verified claim shows:
+   - Verdict with confidence score
+   - Multiple evidence sources (Tavily web search, Wikipedia, Google Fact Check)
+   - Source credibility scores with domain classification
+   - Justification explaining the reasoning
+   - Evidence breakdown by stance (supporting, refuting, neutral, unclear)
+   - Search status tracking (which searches succeeded/failed)
+
+**Evidence Sources**: The AI gathers information in parallel from:
+- **Tavily Web Search**: Real-time web results with domain credibility classification (0.50-0.85)
+- **Wikipedia**: Reliable encyclopedia content (fixed credibility: 0.8)
+- **Google Fact Check**: Professional fact-checker verdicts (fixed credibility: 0.95)
+
+### Step 3: Compare & Learn
+
+**Tab: "Compare"**
+
+See side-by-side differences between your assessment and the AI's analysis:
+
+- **Visual Comparison**: Your claims vs AI claims in parallel columns
+- **Match Indicators**: See where you agreed or differed with the AI
+- **Detailed Differences**: Compare verdicts, confidence levels, sources used, and reasoning approaches
+- **AI Feedback**: Click "Analyze My Performance" to get concise educational feedback:
+  - Brief summary of how your assessment compared to the AI's
+  - Specific areas for improvement (2-4 actionable suggestions)
+  - Helps you identify blind spots and learning opportunities
+
+**Why comparison matters**: This step reveals your blind spots, shows alternative research approaches, and helps you calibrate confidence. It's where you learn what you might have missed or where you excelled.
+
+### Additional Features
+
+- **Settings Panel**: Configure verification behavior without code changes
+  - Adjust claim limits per mode (basic/comprehensive)
+  - Set maximum sources per evidence type (Tavily, Wikipedia, Google Fact Check)
+  - Choose AI model (GPT-5.1, GPT-4.1-mini, GPT-5-mini)
+  - Set per-claim timeout and Tavily search depth (basic/advanced)
+  - Changes apply immediately via automatic backend reload
+
+- **In-App Documentation**: Complete user guide covering workflow, modes, verdicts, evidence weighting, source credibility, and educational best practices, plus full domain taxonomy reference
+
+### Quick Option: Direct AI Analysis
+
+If you need fast verification without the learning workflow, you can skip directly to "AI Analysis" and use it as a standalone fact-checker. However, you'll miss the educational benefits of independent critical thinking and self-assessment.
 
