@@ -380,29 +380,6 @@ function GettingStartedTab() {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="System Limitations">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h4 className="font-semibold text-amber-900 mb-2">Important Constraints</h4>
-          <ul className="space-y-2 text-amber-900">
-            <li className="leading-relaxed">
-              <strong>Character Limit:</strong> Input text is limited to 2,000 characters to ensure timely processing
-            </li>
-            <li className="leading-relaxed">
-              <strong>Claim Limit:</strong> Maximum 5 claims can be verified per run in both basic and comprehensive modes
-            </li>
-            <li className="leading-relaxed">
-              <strong>Evidence Sources:</strong> Limited to web search (Tavily), Wikipedia, and Google Fact Check API —
-              doesn't access paywalled content, academic databases, or social media platforms
-            </li>
-            <li className="leading-relaxed">
-              <strong>Recency:</strong> Some sources may not include the very latest information (within hours of an event)
-            </li>
-            <li className="leading-relaxed">
-              <strong>Language:</strong> Optimized for English-language claims and sources
-            </li>
-          </ul>
-        </div>
-      </CollapsibleSection>
     </div>
   )
 }

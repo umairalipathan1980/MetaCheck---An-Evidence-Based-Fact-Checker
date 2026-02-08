@@ -329,20 +329,10 @@ export function ComparePanel({ studentClaims = [], aiResult }) {
           ) : (
             <div className="space-y-6">
               {/* Overall Summary */}
-              <div className="rounded-xl border border-indigo-200 bg-white p-4">
-                <h4 className="text-sm font-semibold text-indigo-900 mb-2">Overall Summary</h4>
-                <p className="text-sm text-slate-700">{analysis.overall_summary}</p>
-              </div>
-
-              {/* Strengths */}
-              {analysis.strengths?.length > 0 && (
-                <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-                  <h4 className="text-sm font-semibold text-green-900 mb-2">✓ Strengths</h4>
-                  <ul className="list-disc pl-4 space-y-1 text-sm text-slate-700">
-                    {analysis.strengths.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
+              {analysis.overall_summary && (
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                  <h4 className="text-sm font-semibold text-indigo-900 mb-2">Summary</h4>
+                  <p className="text-sm text-slate-700 leading-relaxed">{analysis.overall_summary}</p>
                 </div>
               )}
 
@@ -352,56 +342,9 @@ export function ComparePanel({ studentClaims = [], aiResult }) {
                   <h4 className="text-sm font-semibold text-amber-900 mb-2">💡 Areas for Improvement</h4>
                   <ul className="list-disc pl-4 space-y-1 text-sm text-slate-700">
                     {analysis.areas_for_improvement.map((item, idx) => (
-                      <li key={idx}>{item}</li>
+                      <li key={idx} className="leading-relaxed">{item}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-
-              {/* Key Insights */}
-              {analysis.key_insights?.length > 0 && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-2">🔍 Key Insights</h4>
-                  <ul className="list-disc pl-4 space-y-1 text-sm text-slate-700">
-                    {analysis.key_insights.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Claim-by-Claim Feedback */}
-              {analysis.claim_by_claim_feedback?.length > 0 && (
-                <div className="rounded-xl border border-purple-200 bg-white p-4">
-                  <h4 className="text-sm font-semibold text-purple-900 mb-3">📝 Claim-by-Claim Feedback</h4>
-                  <div className="space-y-3">
-                    {analysis.claim_by_claim_feedback.map((feedback, idx) => (
-                      <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <p className="text-xs font-semibold text-slate-700 mb-1">Claim {idx + 1}:</p>
-                        <p className="text-sm text-slate-700">{feedback}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Learning Opportunities */}
-              {analysis.learning_opportunities?.length > 0 && (
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-                  <h4 className="text-sm font-semibold text-indigo-900 mb-2">🎯 Learning Opportunities</h4>
-                  <ul className="list-disc pl-4 space-y-1 text-sm text-slate-700">
-                    {analysis.learning_opportunities.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Encouragement */}
-              {analysis.encouragement && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                  <h4 className="text-sm font-semibold text-emerald-900 mb-2">💪 Keep Going!</h4>
-                  <p className="text-sm text-slate-700">{analysis.encouragement}</p>
                 </div>
               )}
 

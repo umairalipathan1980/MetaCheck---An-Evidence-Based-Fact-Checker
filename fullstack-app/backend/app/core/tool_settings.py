@@ -25,6 +25,7 @@ DEFAULT_TOOL_SETTINGS = {
         "model_choice": "gpt-5.1",
         "allowed_models": ["gpt-5.1", "gpt-4.1-mini", "gpt-5-mini"],
         "per_claim_timeout_seconds": 90,
+        "tavily_search_depth": "basic",
     },
 }
 
@@ -128,6 +129,10 @@ def _validate_tool_settings(settings: dict[str, Any]) -> dict[str, Any]:
     if per_claim_timeout <= 0:
         raise ValueError("performance_cost_controls.per_claim_timeout_seconds must be > 0")
 
+    tavily_search_depth = perf.get("tavily_search_depth", "basic")
+    if tavily_search_depth not in ["basic", "advanced"]:
+        raise ValueError("performance_cost_controls.tavily_search_depth must be 'basic' or 'advanced'")
+
     return {
         "verification_scope": {
             "basic": {
@@ -149,6 +154,7 @@ def _validate_tool_settings(settings: dict[str, Any]) -> dict[str, Any]:
             "model_choice": model_choice,
             "allowed_models": allowed_models,
             "per_claim_timeout_seconds": per_claim_timeout,
+            "tavily_search_depth": tavily_search_depth,
         },
     }
 

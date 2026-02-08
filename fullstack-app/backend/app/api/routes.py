@@ -66,6 +66,7 @@ class ModeSettingsPayload(BaseModel):
 class PerformanceSettingsPayload(BaseModel):
     model_choice: str
     per_claim_timeout_seconds: float = Field(..., gt=0)
+    tavily_search_depth: str = Field(..., pattern="^(basic|advanced)$")
 
 
 class ToolSettingsUpdateRequest(BaseModel):
@@ -102,12 +103,14 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
     comprehensive = file_settings.get("verification_scope", {}).get("comprehensive", {})
     timeout_seconds = perf.get("per_claim_timeout_seconds", 90)
     model_choice = perf.get("model_choice", settings.open_ai_model)
+    tavily_search_depth = perf.get("tavily_search_depth", "basic")
 
     return {
         "ranges": {
             "max_claims_to_verify_per_run": "1-5",
             "max_claims_to_extract": "1-10",
             "max_sources": "1-5",
+            "tavily_search_depth_options": ["basic", "advanced"],
         },
         "basic": {
             "max_claims_to_verify_per_run": int(basic.get("max_claims_to_verify_per_run", 5)),
@@ -118,6 +121,7 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
             "model_choice_current": model_choice,
             "model_choices": allowed_models,
             "per_claim_timeout_seconds": timeout_seconds,
+            "tavily_search_depth": tavily_search_depth,
         },
         "comprehensive": {
             "max_claims_to_verify_per_run": int(comprehensive.get("max_claims_to_verify_per_run", 5)),
@@ -128,6 +132,7 @@ async def get_tool_settings_config(settings=Depends(get_settings)) -> dict[str, 
             "model_choice_current": model_choice,
             "model_choices": allowed_models,
             "per_claim_timeout_seconds": timeout_seconds,
+            "tavily_search_depth": tavily_search_depth,
         },
     }
 
@@ -166,6 +171,7 @@ async def update_tool_settings_config(
             "model_choice": request.performance_cost_controls.model_choice,
             "allowed_models": allowed_models,
             "per_claim_timeout_seconds": request.performance_cost_controls.per_claim_timeout_seconds,
+            "tavily_search_depth": request.performance_cost_controls.tavily_search_depth,
         },
     }
     print(f"[SAVE] Payload to save: {json.dumps(payload, indent=2)}")
@@ -202,7 +208,8 @@ async def reload_settings() -> dict[str, Any]:
             "app.core.tool_settings",      # Base settings loader
             "app.core.settings",           # Uses tool_settings, has cached get_settings()
             "app.core.constants",          # Uses tool_settings and settings
-            "app.core.agents",             # Uses constants
+            "app.core.tools",              # Uses tool_settings for source limits and tavily_search_depth
+            "app.core.agents",             # Uses constants and tools
             "app.core.workflow",           # Uses agents and constants
             "app.services.metacheck_service",  # Uses agents
             "app.services.comparison_service",  # Uses agents

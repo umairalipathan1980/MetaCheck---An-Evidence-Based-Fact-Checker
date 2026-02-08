@@ -135,6 +135,7 @@ export function ToolSettings({ settingsConfig, onSave }) {
       performance_cost_controls: {
         model_choice: settingsConfig.basic?.model_choice_current || 'gpt-5.1',
         per_claim_timeout_seconds: settingsConfig.basic?.per_claim_timeout_seconds ?? 90,
+        tavily_search_depth: settingsConfig.basic?.tavily_search_depth || 'basic',
       },
     })
     setStatus('idle')
@@ -283,6 +284,20 @@ export function ToolSettings({ settingsConfig, onSave }) {
                     </select>
                   </td>
                   <td className="border-b border-slate-100 px-3 py-2">{modelChoices.join(', ')}</td>
+                </tr>
+                <tr className="align-top">
+                  <td className="border-b border-slate-100 px-3 py-2">Tavily search depth</td>
+                  <td className="border-b border-slate-100 px-3 py-2">
+                    <select
+                      value={form.performance_cost_controls.tavily_search_depth}
+                      onChange={(event) => setPerfField('tavily_search_depth', event.target.value)}
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    >
+                      <option value="basic">Basic (faster, cheaper)</option>
+                      <option value="advanced">Advanced (more thorough, slower)</option>
+                    </select>
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2">basic | advanced</td>
                 </tr>
                 <tr className="align-top">
                   <td className="px-3 py-2">Per-claim timeout (seconds)</td>

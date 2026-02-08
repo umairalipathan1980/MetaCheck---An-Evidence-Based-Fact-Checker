@@ -179,13 +179,15 @@ async def comprehensive_evidence_tool(claim: str, mode: str = "basic") -> Eviden
     from app.core.tool_settings import load_tool_settings
     tool_settings = load_tool_settings()
     mode_settings = tool_settings["verification_scope"][mode]
+    perf_settings = tool_settings["performance_cost_controls"]
 
     max_web = int(mode_settings.get("max_web_sources", 3 if mode == "basic" else 5))
     max_wiki = int(mode_settings.get("max_wikipedia_sources", 2 if mode == "basic" else 3))
     max_fact = int(mode_settings.get("max_fact_check_sources", 2 if mode == "basic" else 3))
+    tavily_depth = perf_settings.get("tavily_search_depth", "basic")
 
     # Create parallel tasks
-    tavily_task = tavily_client.search_async(claim, max_results=max_web, search_depth="basic")
+    tavily_task = tavily_client.search_async(claim, max_results=max_web, search_depth=tavily_depth)
     wiki_task = wikipedia_client.search_for_claim_async(claim, max_results=max_wiki)
     fact_task = google_fact_check_client.search_fact_checks_async(claim, max_results=max_fact)
 

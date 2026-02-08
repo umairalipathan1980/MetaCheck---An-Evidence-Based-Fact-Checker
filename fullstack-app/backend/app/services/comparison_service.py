@@ -5,10 +5,11 @@ Service for analyzing student claims versus AI-extracted claims.
 """
 
 import json
-from agents import Runner
+import os
+from openai import AsyncOpenAI
 
-from app.core.agents import comparison_analyzer
 from app.core.models import ComparisonAnalysis
+from app.core.constants import MODEL_NAME
 
 
 async def run_comparison_analysis(student_claims: list, ai_result) -> ComparisonAnalysis:
@@ -50,8 +51,28 @@ async def run_comparison_analysis(student_claims: list, ai_result) -> Comparison
             "sources_count": len(claim.key_sources) if hasattr(claim, 'key_sources') else len(claim.get('key_sources', [])),
         })
 
-    # Build prompt for the agent
-    prompt = f"""Analyze the following comparison between student claims and AI-extracted claims:
+    # Build prompt for direct LLM call
+    system_prompt = """You are an educational feedback specialist analyzing how a student's fact-checking compares to AI analysis.
+
+Analyze the student's claims and verdicts against the AI's extracted claims and verdicts, providing CONCISE educational feedback.
+
+Provide ONLY these two sections:
+
+1. **overall_summary** 
+   - Brief high-level assessment of the student's performance
+   - Note overall agreement/disagreement patterns
+   - Keep it simple and encouraging
+
+2. **areas_for_improvement** (or empty array if performance was strong)
+   - Specific, actionable suggestions
+   - Focus on the most important improvements only
+   - Leave empty if student work was already strong
+
+Do NOT populate: strengths, key_insights, claim_by_claim_feedback, learning_opportunities, or encouragement fields.
+
+Keep all feedback brief, student-friendly, and focused on actionable insights."""
+
+    user_prompt = f"""Analyze the following comparison between student claims and AI-extracted claims:
 
 **STUDENT CLAIMS ({len(student_data)} total):**
 {json.dumps(student_data, indent=2)}
@@ -59,35 +80,68 @@ async def run_comparison_analysis(student_claims: list, ai_result) -> Comparison
 **AI-EXTRACTED CLAIMS ({len(ai_data)} total):**
 {json.dumps(ai_data, indent=2)}
 
-Provide comprehensive educational feedback comparing the student's work with the AI's analysis.
-Focus on:
-- What the student did well
-- Areas for improvement (constructive)
-- Key learning insights
-- Specific claim-by-claim feedback
-- Actionable learning opportunities
-- Encouragement
+Provide your analysis following the format specified."""
 
-Be supportive, educational, and specific in your feedback."""
+    # Initialize OpenAI client
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        # Fallback if API key missing
+        return ComparisonAnalysis(
+            overall_summary="Unable to generate comparison analysis: API key not configured.",
+            strengths=[],
+            areas_for_improvement=["Please configure OPENAI_API_KEY environment variable."],
+            key_insights=[],
+            claim_by_claim_feedback=[],
+            learning_opportunities=[],
+            encouragement=""
+        )
 
-    # Run the analyzer agent
-    result = await Runner.run(
-        comparison_analyzer,
-        prompt,
-        max_turns=3,
-    )
+    client = AsyncOpenAI(api_key=api_key)
 
-    # Return the structured analysis
-    if result and result.final_output:
-        return result.final_output
+    try:
+        # Prepare API call parameters
+        api_params = {
+            "model": MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "response_format": ComparisonAnalysis,
+            "temperature": 0.3,
+        }
 
-    # Fallback if agent fails
-    return ComparisonAnalysis(
-        overall_summary="Unable to generate comparison analysis at this time.",
-        strengths=["Analysis system encountered an issue."],
-        areas_for_improvement=["Please try again later."],
-        key_insights=["System feedback unavailable."],
-        claim_by_claim_feedback=["Detailed feedback unavailable."],
-        learning_opportunities=["Try running the analysis again."],
-        encouragement="Keep up the great work with your fact-checking practice!"
-    )
+        # Use correct token parameter based on model family
+        if MODEL_NAME.startswith("gpt-5"):
+            api_params["max_completion_tokens"] = 2048
+        else:
+            api_params["max_tokens"] = 2048
+
+        # Make direct API call with structured output
+        response = await client.beta.chat.completions.parse(**api_params)
+
+        # Extract the parsed response
+        if response.choices and response.choices[0].message.parsed:
+            return response.choices[0].message.parsed
+
+        # Fallback if parsing fails
+        return ComparisonAnalysis(
+            overall_summary="Unable to parse comparison analysis response.",
+            strengths=[],
+            areas_for_improvement=["Please try again."],
+            key_insights=[],
+            claim_by_claim_feedback=[],
+            learning_opportunities=[],
+            encouragement=""
+        )
+
+    except Exception as exc:
+        # Fallback on any error
+        return ComparisonAnalysis(
+            overall_summary=f"Unable to generate comparison analysis: {str(exc)}",
+            strengths=[],
+            areas_for_improvement=["Please try again later."],
+            key_insights=[],
+            claim_by_claim_feedback=[],
+            learning_opportunities=[],
+            encouragement=""
+        )

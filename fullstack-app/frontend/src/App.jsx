@@ -454,7 +454,7 @@ function App() {
 
         <footer className="mt-auto border-t border-slate-200 bg-white/80 px-4 py-6">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-center text-sm text-slate-600">
-            <span>© 2025 MetaCheck. All rights reserved.</span>
+            <span>© 2026 MetaCheck. All rights reserved.</span>
           </div>
         </footer>
       </div>

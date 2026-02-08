@@ -9,7 +9,7 @@
     },
     "comprehensive": {
       "max_claims_to_verify_per_run": 3,
-      "max_claims_to_extract": 3,
+      "max_claims_to_extract": 10,
       "max_web_sources": 3,
       "max_wikipedia_sources": 2,
       "max_fact_check_sources": 2
@@ -22,6 +22,7 @@
       "gpt-4.1-mini",
       "gpt-5-mini"
     ],
-    "per_claim_timeout_seconds": 90.0
+    "per_claim_timeout_seconds": 90.0,
+    "tavily_search_depth": "basic"
   }
 }
