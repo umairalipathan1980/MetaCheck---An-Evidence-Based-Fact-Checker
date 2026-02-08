@@ -29,7 +29,10 @@ app/core/
 | `/api/config/domain-categories` | GET | Domain credibility taxonomy (from `app/config/config.json`) |
 | `/api/extract` | POST | Extract claims from text (no verification), returns claims with worthiness scores |
 | `/api/verify` | POST | Fact-check text or selected claims, returns `FinalAssessment` |
-| `/api/compare` | POST | Compare student claims with AI results, returns educational feedback |
+| `/api/compare` | POST | Compare student claims with AI results, returns concise feedback (single LLM call) |
+| `/api/settings/tool` | GET | Get current tool settings (verification scope, performance controls) |
+| `/api/settings/tool` | PUT | Update tool settings with automatic backend reload |
+| `/api/settings/reload` | POST | Manually reload backend modules after settings change |
 
 **POST /api/extract** body:
 ```json
@@ -59,8 +62,30 @@ app/core/
 ```
 
 **Claim Count Limits:**
-- Basic mode: Maximum 5 claims can be verified
-- Comprehensive mode: Maximum 5 claims can be verified
+- Basic mode: Maximum 5 claims can be verified (configurable via settings)
+- Comprehensive mode: Maximum 3 claims can be verified (configurable via settings)
+
+## Configurable Settings
+
+Settings are stored in `app/config/settings.json` and can be modified via the Settings UI (frontend) or directly edited.
+
+**Verification Scope (per mode):**
+- `max_claims_to_verify_per_run`: Maximum claims per verification request
+- `max_claims_to_extract`: Maximum claims to extract from text
+- `max_web_sources`: Maximum Tavily web search results per claim (1-5)
+- `max_wikipedia_sources`: Maximum Wikipedia results per claim (1-5)
+- `max_fact_check_sources`: Maximum Google Fact Check results per claim (1-5)
+
+**Performance/Cost Controls:**
+- `model_choice`: AI model (gpt-5.1, gpt-4.1-mini, gpt-5-mini)
+- `per_claim_timeout_seconds`: Timeout for each claim verification
+- `tavily_search_depth`: Tavily API mode ("basic" or "advanced")
+
+**Module Reload System:**
+When settings are saved via `/api/settings/tool` PUT endpoint, the backend automatically reloads affected modules:
+- `app.core.tool_settings` → `app.core.settings` → `app.core.constants` → `app.core.tools` → `app.core.agents` → `app.core.workflow` → services
+
+This enables runtime configuration changes without server restart.
 
 ## Setup
 
@@ -225,7 +250,8 @@ Collect all VerificationResults
 | `analysis.py` | MetacognitiveTracker (reasoning steps, contradiction detection) |
 | `domain.py` | Config-driven domain credibility classification (0.50-0.85 score range) |
 | `tools.py` | Function tools for agents: `wikipedia_search_tool`, `google_fact_check_tool` (with status tracking) |
-| `agents.py` | Agent definitions: `claim_extractor`, `orchestrator` (with ALL tools), `comparison_analyzer` (educational feedback) |
+| `agents.py` | Agent definitions: `claim_extractor`, `orchestrator` (with ALL tools) |
+| `services/comparison_service.py` | Comparison analysis via direct LLM call (concise feedback: summary + improvements) |
 | `workflow.py` | Main `verify_claims()` async function with parallel orchestrators, search status tracking, and claim filtering support |
 
 ## Search Status Tracking

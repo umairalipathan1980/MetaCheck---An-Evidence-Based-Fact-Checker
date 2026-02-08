@@ -67,9 +67,9 @@ fullstack-app/
 ┌─────────────────────────────────────────────────────────────────┐
 │            STEP 2: Claim Preview & Selection (UI)               │
 │   • Display all extracted claims with worthiness scores         │
-│   • Paginated view: 5 claims per page with prev/next buttons   │
+│   • Paginated view: 5 claims per page with prev/next buttons    │
 │   • User selects which claims to verify (checkbox UI)           │
-│   • Limits: 8 claims (basic mode) | 5 claims (comprehensive)   │
+│   • Limits: 8 claims (basic mode) | 5 claims (comprehensive)    │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                 ┌────────────────┼────────────────┐
@@ -83,19 +83,19 @@ fullstack-app/
 │         (One orchestrator per claim, max 5 concurrent)          │
 │                                                                 │
 │   Each orchestrator has ALL tools:                              │
-│   ┌─────────────────┐ ┌──────────────┐ ┌────────────────┐     │
-│   │  WebSearchTool  │ │  Wikipedia   │ │  Google Fact   │     │
-│   │  (OpenAI)       │ │  Search      │ │  Check API     │     │
-│   └────────┬────────┘ └──────┬───────┘ └───────┬────────┘     │
-│            └──────────────────┼─────────────────┘              │
-│                               ▼                                │
-│                    ┌──────────────────────┐                    │
-│                    │ domain_classification│                    │
-│                    │       _tool          │                    │
-│                    └──────────────────────┘                    │
+│   ┌─────────────────┐ ┌──────────────┐ ┌────────────────┐       │
+│   │  WebSearchTool  │ │  Wikipedia   │ │  Google Fact   │       │
+│   │  (OpenAI)       │ │  Search      │ │  Check API     │       │
+│   └────────┬────────┘ └──────┬───────┘ └───────┬────────┘       │
+│            └──────────────────┼─────────────────┘               │
+│                               ▼                                 │
+│                    ┌──────────────────────┐                     │
+│                    │ domain_classification│                     │
+│                    │       _tool          │                     │
+│                    └──────────────────────┘                     │
 │                                                                 │
-│   Agent calls tools sequentially, sees ALL evidence,           │
-│   applies VERDICT_CRITERIA, outputs VerificationResult         │
+│   Agent calls tools sequentially, sees ALL evidence,            │
+│   applies VERDICT_CRITERIA, outputs VerificationResult          │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -109,9 +109,6 @@ fullstack-app/
 ```
 
 **Key Points:**
-- **Text length limit**: 2,000 characters maximum
-- **Claim count limits**: 5 for basic mode, 5 for comprehensive mode
-- **Pagination**: 5 claims displayed per page with Previous/Next navigation
 - **Two-step workflow**: Extract → Select → Verify (user control over which claims to verify)
 - **Claims run in parallel** (bounded by semaphore, default: 5 concurrent)
 - **Tools run sequentially** within each orchestrator (agent-controlled)
@@ -180,7 +177,10 @@ npm run dev  # default: http://localhost:5173
 | `/api/config/domain-categories` | GET | Domain taxonomy for UI docs |
 | `/api/extract` | POST | Extract claims from text (no verification), returns claims with worthiness scores |
 | `/api/verify` | POST | Fact-check text or selected claims, returns `FinalAssessment` |
-| `/api/compare` | POST | Compare student claims with AI results, returns educational feedback |
+| `/api/compare` | POST | Compare student claims with AI results, returns concise feedback (summary + improvements) |
+| `/api/settings/tool` | GET | Get current tool settings (verification scope, performance controls) |
+| `/api/settings/tool` | PUT | Update tool settings with automatic backend reload |
+| `/api/settings/reload` | POST | Manually reload backend modules after settings change |
 
 **POST /api/extract** body:
 ```json
@@ -208,6 +208,24 @@ npm run dev  # default: http://localhost:5173
   "selected_claim_indices": "array of integers (optional, 0-indexed)"
 }
 ```
+
+## Configurable Settings
+
+MetaCheck includes a Settings UI for configuring verification behavior without code changes:
+
+**Verification Scope (per mode: basic/comprehensive):**
+- `max_claims_to_verify_per_run`: Maximum claims to verify per request (basic: 5, comprehensive: 3)
+- `max_claims_to_extract`: Maximum claims to extract from text (both: 10)
+- `max_web_sources`: Maximum Tavily web search results per claim (1-5, default: 3)
+- `max_wikipedia_sources`: Maximum Wikipedia results per claim (1-5, default: 2)
+- `max_fact_check_sources`: Maximum Google Fact Check results per claim (1-5, default: 2)
+
+**Performance/Cost Controls:**
+- `model_choice`: AI model to use (gpt-5.1, gpt-4.1-mini, gpt-5-mini)
+- `per_claim_timeout_seconds`: Timeout for each claim verification (default: 90.0)
+- `tavily_search_depth`: Tavily API search mode ("basic" for faster/cheaper, "advanced" for thorough/slower)
+
+Settings are stored in `backend/app/config/settings.json` and automatically reload the backend when saved via the Settings UI.
 
 ## Usage Examples
 
@@ -239,7 +257,7 @@ curl -X POST http://localhost:8000/api/verify \
   - Step 2: Preview extracted claims with worthiness scores (5 per page, paginated navigation)
   - Step 3: Select which claims to verify (checkbox UI)
   - Step 4: View verification results with detailed evidence and metacognition
-- **Compare**: Side-by-side student vs AI verdicts/confidence/sources with AI-powered analysis
+- **Compare**: Side-by-side student vs AI verdicts/confidence/sources with concise AI feedback (summary + areas for improvement)
 - **Documentation**: In-app user guide (workflow, modes, verdicts, weighting, limits) plus domain taxonomy reference
 
 ## Notes

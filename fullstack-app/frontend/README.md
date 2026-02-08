@@ -106,13 +106,15 @@ src/components/
 - **Text Length Limit**: 2,000 character maximum with real-time character counter
 - **Claim Preview & Selection**: View extracted claims with worthiness scores, select which to verify
 - **Paginated View**: 5 claims displayed per page with Previous/Next navigation buttons
-- **Smart Claim Limits**: 5 claims max in basic mode, 5 claims max in comprehensive mode
+- **Smart Claim Limits**: Configurable via Settings (default: 5 basic, 3 comprehensive)
 - **Multi-Claim Student Assessment**: Create multiple claims with full CRUD operations (add, edit, delete)
 - **Mode Selection**: Choose between `basic` (concise) or `comprehensive` (full metacognitive detail)
 - **Real-time Elapsed Time**: Track verification duration
 - **Evidence Breakdown**: View sources by type (web, Wikipedia, fact-check)
 - **Stance Analysis**: See supporting, refuting, neutral, unclear evidence counts
-- **AI-Powered Comparison**: Get educational feedback comparing student work with AI analysis
+- **Concise Comparison Feedback**: Get brief summary + areas for improvement (not verbose)
+- **Configurable Settings**: Adjust verification scope, model choice, timeouts, source limits, Tavily search depth
+- **Automatic Backend Reload**: Settings changes apply immediately without server restart
 - **Clickable Sources**: All sources are clickable links to original web pages
 
 ## Notes
