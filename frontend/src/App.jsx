@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, Download, Loader, ShieldCheck, Target } from 'lucide-react'
+import { Activity, Download, ExternalLink, Loader, ShieldCheck, Target } from 'lucide-react'
 
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card'
@@ -459,6 +459,16 @@ function AppContent() {
                         >
                           <Download className="h-4 w-4" />
                           Download complete documentation
+                        </a>
+                        <br />
+                        <a
+                          href="https://github.com/umairalipathan1980/MetaCheck---An-Evidence-Based-Fact-Checker"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline mt-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          GitHub
                         </a>
                       </CardDescription>
                     </CardHeader>
