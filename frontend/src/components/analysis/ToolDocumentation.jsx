@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { DomainLegend } from './DomainLegend'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, User, Bot, GitCompare, ArrowRight } from 'lucide-react'
 
 // Collapsible Section Component
 function CollapsibleSection({ title, children, defaultOpen = false }) {
@@ -35,9 +35,9 @@ export function ToolDocumentation({ categories }) {
 
   const tabs = [
     { key: 'getting-started', label: 'How to Use' },
+    { key: 'workflow', label: 'How It Works' },
     { key: 'verdicts', label: 'Understanding Verdicts' },
     { key: 'sources', label: 'Evidence Sources' },
-    { key: 'workflow', label: 'How It Works' },
     { key: 'educational', label: 'Educational Use' },
   ]
 
@@ -1308,11 +1308,212 @@ function SourcesTab({ categories }) {
 function WorkflowTab() {
   return (
     <div className="space-y-4">
+      {/* Visual Workflow Diagram */}
+      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200">
+        <h3 className="text-lg font-bold text-center text-slate-900 mb-4">MetaCheck Workflow</h3>
+
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-3">
+          {/* Step 1: User Assessment */}
+          <div className="flex flex-col items-center">
+            <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-blue-400 w-48 h-40 flex flex-col items-center justify-center">
+              <div className="bg-blue-500 rounded-full p-3 mb-2">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-slate-900 text-center mb-1 text-sm">Step 1: Your Assessment</h4>
+              <p className="text-xs text-slate-600 text-center leading-tight">
+                Extract claims, gather evidence, and make your own verdict
+              </p>
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="hidden lg:block">
+            <ArrowRight className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div className="lg:hidden">
+            <ChevronDown className="w-6 h-6 text-indigo-600" />
+          </div>
+
+          {/* Step 2: AI Verification */}
+          <div className="flex flex-col items-center">
+            <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-indigo-400 w-48 h-40 flex flex-col items-center justify-center">
+              <div className="bg-indigo-500 rounded-full p-3 mb-2">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-slate-900 text-center mb-1 text-sm">Step 2: AI Verification</h4>
+              <p className="text-xs text-slate-600 text-center leading-tight">
+                AI agents search sources, analyze evidence, and generate verdicts
+              </p>
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="hidden lg:block">
+            <ArrowRight className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div className="lg:hidden">
+            <ChevronDown className="w-6 h-6 text-indigo-600" />
+          </div>
+
+          {/* Step 3: Compare & Learn */}
+          <div className="flex flex-col items-center">
+            <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-purple-400 w-48 h-40 flex flex-col items-center justify-center">
+              <div className="bg-purple-500 rounded-full p-3 mb-2">
+                <GitCompare className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-slate-900 text-center mb-1 text-sm">Step 3: Compare & Learn</h4>
+              <p className="text-xs text-slate-600 text-center leading-tight">
+                See how your assessment compares with AI and get feedback
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Insight */}
+        <div className="mt-4 bg-white/80 rounded-lg p-3 border border-indigo-300">
+          <p className="text-xs text-slate-700 text-center leading-relaxed">
+            <strong className="text-indigo-700">Educational Insight:</strong> By doing your own fact-checking first,
+            you develop critical thinking skills before seeing the AI's approach. The comparison helps you learn
+            professional fact-checking techniques.
+          </p>
+        </div>
+      </div>
+
       <CollapsibleSection title="How MetaCheck Works Behind the Scenes" defaultOpen={true}>
-        <p className="leading-relaxed">
+        <p className="leading-relaxed mb-4">
           Understanding the technical workflow helps you interpret results and troubleshoot issues. MetaCheck uses an
           <strong> agentic AI architecture</strong> with specialized components working together.
         </p>
+
+        {/* Detailed Technical Workflow Diagram */}
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border-2 border-slate-300">
+        <h3 className="text-lg font-bold text-center text-slate-900 mb-6">
+          Complete Technical Workflow
+        </h3>
+
+        <div className="space-y-3">
+          {/* Step 1: Input Text */}
+          <div className="flex justify-center">
+            <div className="bg-blue-100 border-2 border-blue-500 rounded-lg px-8 py-3 shadow-md text-center min-w-[200px]">
+              <p className="font-bold text-blue-900 text-sm">📝 INPUT</p>
+              <p className="text-xs text-blue-700 mt-1">User provides text to verify</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center"><ChevronDown className="w-5 h-5 text-slate-500" /></div>
+
+          {/* Step 2: Claim Extraction */}
+          <div className="flex justify-center">
+            <div className="bg-indigo-100 border-2 border-indigo-500 rounded-lg px-8 py-3 shadow-md text-center min-w-[200px]">
+              <p className="font-bold text-indigo-900 text-sm">🤖 CLAIM EXTRACTION</p>
+              <p className="text-xs text-indigo-700 mt-1">AI extracts verifiable claims</p>
+              <p className="text-xs text-indigo-600 italic mt-1">(Claim Extractor Agent)</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center"><ChevronDown className="w-5 h-5 text-slate-500" /></div>
+
+          {/* Step 3: User Selection */}
+          <div className="flex justify-center">
+            <div className="bg-amber-100 border-2 border-amber-500 rounded-lg px-8 py-3 shadow-md text-center min-w-[200px]">
+              <p className="font-bold text-amber-900 text-sm">✋ USER SELECTION</p>
+              <p className="text-xs text-amber-700 mt-1">User selects claims to verify</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center"><ChevronDown className="w-5 h-5 text-slate-500" /></div>
+
+          {/* Step 4: Parallel Agent Spawn */}
+          <div className="bg-purple-50 border-2 border-purple-400 rounded-lg p-4">
+            <p className="text-center font-bold text-purple-900 text-sm mb-3">
+              ⚡ PARALLEL VERIFICATION AGENTS
+            </p>
+            <p className="text-center text-xs text-purple-700 mb-4">
+              System spawns one agent per selected claim (all run simultaneously)
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={num} className="bg-white border-2 border-purple-500 rounded-lg p-3 shadow-sm">
+                  <p className="text-center font-bold text-purple-900 text-xs mb-2">Agent {num}</p>
+                  <p className="text-center text-xs text-purple-600 mb-2 italic">Claim {num}</p>
+
+                  {/* Parallel Tools */}
+                  <div className="bg-purple-100 rounded p-2 mb-2">
+                    <p className="text-xs font-semibold text-purple-800 mb-1 text-center">Parallel Search</p>
+                    <div className="space-y-1">
+                      <div className="bg-white rounded px-2 py-1 text-xs text-center text-purple-700 border border-purple-300">
+                        🌐 Web
+                      </div>
+                      <div className="bg-white rounded px-2 py-1 text-xs text-center text-purple-700 border border-purple-300">
+                        📚 Wiki
+                      </div>
+                      <div className="bg-white rounded px-2 py-1 text-xs text-center text-purple-700 border border-purple-300">
+                        ✓ Fact Check
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center my-1">
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                  </div>
+
+                  {/* Evidence Processing */}
+                  <div className="bg-orange-50 rounded p-2 mb-2 border border-orange-300">
+                    <p className="text-xs font-semibold text-orange-800 text-center mb-1">Process Evidence</p>
+                    <p className="text-xs text-orange-700 text-center leading-tight">
+                      • Credibility scoring<br/>
+                      • Stance analysis
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center my-1">
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                  </div>
+
+                  {/* Verdict Generation */}
+                  <div className="bg-emerald-100 rounded px-2 py-1.5 border-2 border-emerald-500">
+                    <p className="text-xs text-center text-emerald-800 font-bold">Verdict</p>
+                    <p className="text-xs text-center text-emerald-700 leading-tight">
+                      + Confidence<br/>
+                      + Justification
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-center"><ChevronDown className="w-5 h-5 text-slate-500" /></div>
+
+          {/* Step 5: Aggregation */}
+          <div className="flex justify-center">
+            <div className="bg-teal-100 border-2 border-teal-500 rounded-lg px-8 py-3 shadow-md text-center min-w-[200px]">
+              <p className="font-bold text-teal-900 text-sm">📊 AGGREGATION</p>
+              <p className="text-xs text-teal-700 mt-1">Collect all verdicts + evidence</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center"><ChevronDown className="w-5 h-5 text-slate-500" /></div>
+
+          {/* Step 6: Final Output */}
+          <div className="flex justify-center">
+            <div className="bg-emerald-100 border-2 border-emerald-500 rounded-lg px-8 py-3 shadow-lg text-center min-w-[200px]">
+              <p className="font-bold text-emerald-900 text-sm">✅ FINAL ASSESSMENT</p>
+              <p className="text-xs text-emerald-700 mt-1">Complete analysis with sources</p>
+            </div>
+          </div>
+
+          {/* Technical Details */}
+          <div className="mt-3 bg-slate-100 border border-slate-300 rounded-lg p-3">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              <strong className="text-slate-800">Technical Implementation:</strong> Uses OpenAI Agents SDK with parallel
+              tool execution. Each verification agent is an autonomous AI that orchestrates evidence gathering,
+              analyzes credibility, determines stance, and synthesizes a verdict with full reasoning transparency.
+            </p>
+          </div>
+        </div>
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="The Verification Pipeline">

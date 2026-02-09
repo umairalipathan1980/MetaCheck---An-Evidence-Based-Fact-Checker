@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, Loader, ShieldCheck, Target } from 'lucide-react'
+import { Activity, Download, Loader, ShieldCheck, Target } from 'lucide-react'
 
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card'
@@ -449,7 +449,18 @@ function AppContent() {
                   <Card className="w-full max-w-4xl border-slate-200">
                     <CardHeader>
                       <CardTitle className="text-lg">Documentation</CardTitle>
-                      <CardDescription>How to use MetaCheck and how scoring works.</CardDescription>
+                      <CardDescription>
+                        How to use MetaCheck and how scoring works.
+                        <br />
+                        <a
+                          href="/docs/documentation.pdf"
+                          download
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline mt-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download complete documentation
+                        </a>
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <ToolDocumentation categories={domainConfig?.categories} />
