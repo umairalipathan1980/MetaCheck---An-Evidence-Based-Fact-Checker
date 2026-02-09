@@ -198,8 +198,8 @@ This transparency helps students understand when API keys are missing or searche
 ```bash
 cd backend
 # Create .env (see .env.example)
-# Required: OPENAI_API_KEY
-# Optional: GOOGLE_FACT_CHECK_API_KEY, WIKIPEDIA_ACCESS_TOKEN
+# Required: OPENAI_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD, USER_USERNAME, USER_PASSWORD
+# Recommended: TAVILY_API_KEY, GOOGLE_FACT_CHECK_API_KEY, WIKIPEDIA_ACCESS_TOKEN
 
 python -m venv .venv && .\.venv\Scripts\activate  # Windows
 # source .venv/bin/activate  # macOS/Linux
@@ -208,6 +208,52 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 Health check: `http://localhost:8000/api/health`
+
+### Backend `.env` setup
+
+Create `backend/.env` with at least:
+
+```env
+# Core model access (required)
+OPENAI_API_KEY=your_openai_api_key
+
+# Logins (required)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_admin_password
+USER_USERNAME=user
+USER_PASSWORD=your_user_password
+
+# Evidence source APIs (recommended)
+TAVILY_API_KEY=your_tavily_api_key
+GOOGLE_FACT_CHECK_API_KEY=your_google_fact_check_api_key
+WIKIPEDIA_ACCESS_TOKEN=your_wikipedia_access_token
+```
+
+Notes:
+- `OPENAI_API_KEY` is required for claim extraction, verification, and comparison feedback.
+- `TAVILY_API_KEY` is strongly recommended for robust web evidence retrieval.
+- `GOOGLE_FACT_CHECK_API_KEY` and `WIKIPEDIA_ACCESS_TOKEN` improve coverage; if missing, those searches will be skipped and reflected in `search_status`.
+
+### How to get the API keys
+
+1. **Tavily API key**
+- Go to the Tavily platform and create an account.
+- Generate an API key from your account dashboard.
+- Add it as `TAVILY_API_KEY` in `backend/.env`.
+- Tavily typically offers a free tier (commonly up to 1,000 searches/month; verify current limits on their pricing page).
+
+2. **Google Fact Check API key**
+- Open Google Cloud Console.
+- Create/select a project.
+- Enable the **Fact Check Tools API**.
+- Create an API key under **APIs & Services > Credentials**.
+- Add it as `GOOGLE_FACT_CHECK_API_KEY` in `backend/.env`.
+
+3. **Wikipedia access token**
+- Create a Wikimedia account.
+- Generate an access token via Wikimedia developer/auth tooling.
+- Add it as `WIKIPEDIA_ACCESS_TOKEN` in `backend/.env`.
+- If omitted, Wikipedia requests may still work in some contexts, but authenticated access is recommended for reliability.
 
 ### 2. Frontend
 ```bash
@@ -303,4 +349,3 @@ See side-by-side differences between your assessment and the AI's analysis:
 ### Quick Option: Direct AI Analysis
 
 If you need fast verification without the learning workflow, you can skip directly to "AI Analysis" and use it as a standalone fact-checker. However, you'll miss the educational benefits of independent critical thinking and self-assessment.
-

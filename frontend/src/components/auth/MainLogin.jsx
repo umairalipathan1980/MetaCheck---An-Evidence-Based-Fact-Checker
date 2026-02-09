@@ -47,7 +47,7 @@ export function MainLogin() {
                   type="text"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
-                  placeholder="user"
+                  placeholder="Enter username"
                   required
                   autoFocus
                 />

@@ -50,7 +50,7 @@ export function LoginModal({ open, onClose }) {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
+              placeholder="Enter username"
               required
               autoFocus
             />
