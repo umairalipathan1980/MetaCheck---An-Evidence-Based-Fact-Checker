@@ -26,7 +26,7 @@ The tool lets the users first add their own assessment for a verification task, 
 </p>
 
 <p align="center">
-  <img src="images/workflow.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
+  <img src="images/compare.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
   <em>Comparison of user vs. AI assessment with feedback</em>
 </p>
 
