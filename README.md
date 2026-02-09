@@ -17,17 +17,16 @@ The tool lets the users first add their own assessment for a verification task, 
 </p>
 
 <p align="center">
-  <img src="images/2.png" width="75%" alt="AI assessment (view 1)"><br>
-  <em>AI assessment (view 1)</em>
+  <img src="images/2.png" width="75%" alt="AI assessment (view 1)">
 </p>
 
 <p align="center">
   <img src="images/3.png" width="75%" alt="AI assessment (view 2)"><br>
-  <em>AI assessment (view 2)</em>
+  <em>AI assessment</em>
 </p>
 
 <p align="center">
-  <img src="images/4.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
+  <img src="compare/4.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
   <em>Comparison of user vs. AI assessment with feedback</em>
 </p>
 
