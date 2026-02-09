@@ -32,6 +32,8 @@ class AppSettings(BaseSettings):
     # Admin Authentication
     admin_username: str = Field(..., env="ADMIN_USERNAME")
     admin_password: str = Field(..., env="ADMIN_PASSWORD")
+    user_username: str = Field("user", env="USER_USERNAME")
+    user_password: str = Field("metacheck3.14", env="USER_PASSWORD")
 
     allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173"],

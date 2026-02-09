@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.core.auth import (
-    verify_credentials,
+    verify_admin_credentials,
+    verify_user_credentials,
     create_session_token,
     SESSION_COOKIE_NAME,
     SESSION_EXPIRY_HOURS,
@@ -27,6 +28,7 @@ class AuthStatusResponse(BaseModel):
     """Response model for auth status endpoint."""
     authenticated: bool
     username: Optional[str] = None
+    role: Optional[str] = None
 
 
 @router.post("/login")
@@ -44,7 +46,12 @@ async def login(request: LoginRequest, response: Response):
     Raises:
         HTTPException: 401 if credentials are invalid
     """
-    if not verify_credentials(request.username, request.password):
+    role = None
+    if verify_admin_credentials(request.username, request.password):
+        role = "admin"
+    elif verify_user_credentials(request.username, request.password):
+        role = "user"
+    if role is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
@@ -52,7 +59,7 @@ async def login(request: LoginRequest, response: Response):
 
     # Create session
     token = create_session_token()
-    active_sessions[token] = request.username
+    active_sessions[token] = {"username": request.username, "role": role}
 
     # Set HTTP-only cookie (24h expiry)
     response.set_cookie(
@@ -63,7 +70,30 @@ async def login(request: LoginRequest, response: Response):
         samesite="lax"
     )
 
-    return {"message": "Login successful", "username": request.username}
+    return {"message": "Login successful", "username": request.username, "role": role}
+
+
+@router.post("/admin/login")
+async def admin_login(request: LoginRequest, response: Response):
+    """Authenticate admin only and set session cookie."""
+    if not verify_admin_credentials(request.username, request.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin credentials"
+        )
+
+    token = create_session_token()
+    active_sessions[token] = {"username": request.username, "role": "admin"}
+
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        max_age=SESSION_EXPIRY_HOURS * 3600,
+        samesite="lax"
+    )
+
+    return {"message": "Admin login successful", "username": request.username, "role": "admin"}
 
 
 @router.post("/logout")
@@ -102,5 +132,10 @@ async def auth_status(
         Authentication status with username if authenticated
     """
     if session and session in active_sessions:
-        return {"authenticated": True, "username": active_sessions[session]}
-    return {"authenticated": False, "username": None}
+        session_data = active_sessions[session]
+        return {
+            "authenticated": True,
+            "username": session_data.get("username"),
+            "role": session_data.get("role"),
+        }
+    return {"authenticated": False, "username": None, "role": None}

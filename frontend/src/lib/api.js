@@ -54,6 +54,11 @@ export async function postLogin(username, password) {
   return data
 }
 
+export async function postAdminLogin(username, password) {
+  const { data } = await apiClient.post('/api/auth/admin/login', { username, password })
+  return data
+}
+
 export async function postLogout() {
   const { data } = await apiClient.post('/api/auth/logout')
   return data

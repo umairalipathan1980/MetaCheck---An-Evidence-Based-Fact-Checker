@@ -15,14 +15,14 @@ export function LoginModal({ open, onClose }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { loginAdmin } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    const result = await login(username, password)
+    const result = await loginAdmin(username, password)
     setLoading(false)
 
     if (result.success) {

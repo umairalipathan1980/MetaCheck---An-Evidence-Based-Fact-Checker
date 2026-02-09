@@ -16,12 +16,13 @@ import { ToolDocumentation } from './components/analysis/ToolDocumentation'
 import { ToolSettings } from './components/analysis/ToolSettings'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { LoginModal } from './components/auth/LoginModal'
+import { MainLogin } from './components/auth/MainLogin'
 import { useVerify } from './hooks/useVerify'
 import { getDomainConfig, getHealth, getToolSettings, postExtract, putToolSettings } from './lib/api'
 import { cn } from './lib/utils'
 
 function AppContent() {
-  const { isAuthenticated, username, logout } = useAuth()
+  const { isAuthenticated, username, role, logout } = useAuth()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [text, setText] = useState('')
   const [mode, setMode] = useState('basic')
@@ -32,7 +33,7 @@ function AppContent() {
   const [loadingHealth, setLoadingHealth] = useState(false)
   const [healthError, setHealthError] = useState(null)
   const [studentClaims, setStudentClaims] = useState([])
-  const [tab, setTab] = useState('your') // your | ai | compare | docs | settings
+  const [tab, setTab] = useState('ai') // your | ai | compare | docs | settings
   const [extractedClaims, setExtractedClaims] = useState(null)
   const [extractionStatus, setExtractionStatus] = useState('idle') // idle | loading | success | error
   const [extractionError, setExtractionError] = useState(null)
@@ -121,6 +122,10 @@ function AppContent() {
     setSettingsConfig(updated)
   }
 
+  if (!isAuthenticated) {
+    return <MainLogin />
+  }
+
   return (
     <>
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
@@ -132,19 +137,29 @@ function AppContent() {
             <div className="mx-auto max-w-6xl">
               <div className="flex items-start justify-end mb-4">
                 {!isAuthenticated ? (
-                  <Button
-                    onClick={() => setShowLoginModal(true)}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    Login as Admin
-                  </Button>
-                ) : (
+                  <></>
+                ) : role === 'admin' ? (
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-slate-700 font-medium">
                       Admin: {username}
                     </span>
+                    <Button onClick={logout} variant="secondary" size="sm">
+                      Logout
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-slate-700 font-medium">
+                      User: {username}
+                    </span>
+                    <Button
+                      onClick={() => setShowLoginModal(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      Login as Admin
+                    </Button>
                     <Button onClick={logout} variant="secondary" size="sm">
                       Logout
                     </Button>
@@ -496,7 +511,7 @@ function AppContent() {
                     <ToolSettings
                       settingsConfig={settingsConfig}
                       onSave={handleSaveToolSettings}
-                      isAdmin={isAuthenticated}
+                      isAdmin={role === 'admin'}
                     />
                   </div>
                 </div>
