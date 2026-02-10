@@ -215,14 +215,77 @@ flowchart TD
 
 ### 3.2. Parallel Evidence Gathering
 
-#### 3.2.1. Three Parallel Tools Per Agent
-- Tavily Web Search
-- Wikipedia Search API
-- Google Fact Check API
+Each orchestrator agent calls a single tool — `comprehensive_evidence_tool` (`backend/app/core/tools.py`) which internally fires three evidence sources in parallel and returns a unified `EvidenceBundle`.
 
-#### 3.2.2. Tool Execution Pattern
+```python
+# backend/app/core/tools.py
 
-#### 3.2.6. Evidence Aggregation
+@function_tool
+async def comprehensive_evidence_tool(claim: str, mode: str = "basic") -> EvidenceBundle:
+    # Load source limits from settings
+    max_web  = mode_settings.get("max_web_sources", 3)       # basic: 3  | comprehensive: 5
+    max_wiki = mode_settings.get("max_wikipedia_sources", 2) # basic: 2  | comprehensive: 3
+    max_fact = mode_settings.get("max_fact_check_sources", 2)# basic: 2  | comprehensive: 3
+
+    # Create three parallel tasks
+    tavily_task = tavily_client.search_async(claim, max_results=max_web, search_depth=tavily_depth)
+    wiki_task   = wikipedia_client.search_for_claim_async(claim, max_results=max_wiki)
+    fact_task   = google_fact_check_client.search_fact_checks_async(claim, max_results=max_fact)
+
+    # Execute all three in parallel
+    (web_evidence, web_status), (wiki_evidence, wiki_status), (fact_evidence, fact_status) = \
+        await asyncio.gather(tavily_task, wiki_task, fact_task)
+
+    # Combine into a single list
+    combined = (web_evidence or []) + (wiki_evidence or []) + (fact_evidence or [])
+    return EvidenceBundle(evidence=combined, search_status=SearchStatusSummary(...))
+```
+
+**Tavily** (`TavilyClient.search_async`) queries the web and returns results ranked by a relevance score. Each result is wrapped in an `Evidence`.
+
+**Wikipedia** (`WikipediaClient.search_for_claim_async`) queries the Wikipedia REST API and fetches page summaries. Wikipedia evidence gets a fixed credibility score of 0.8, reflecting its community-edited but generally reliable nature. 
+
+**Google Fact Check** (`GoogleFactCheckClient.search_fact_checks_async`) queries the Google Fact Check Tools API and returns verdicts from professional fact-checkers such as PolitiFact, Snopes, and FullFact. These sources receive the highest credibility score (0.95). 
+
+All results are collected as `Evidence` objects and aggregated into a single list:
+
+```python
+# backend/app/core/models.py
+
+class Evidence(BaseModel):
+    source_name:      str
+    source_type:      Literal["fact_check", "wikipedia", "web_search"]
+    url:              str
+    snippet:          str
+    relevance_score:  float  # 0.0 – 1.0
+    credibility_score: float  # 0.0 – 1.0
+    stance: Optional[Literal["supports", "refutes", "neutral", "unclear"]] = None
+```
+
+The agent then reads each snippet to assign stance for each source's evidence, before proceeding to verdict generation.
+
+```mermaid
+flowchart TD
+    A([🔍 orchestrator Agent]) --> B["comprehensive_evidence_tool(claim)"]
+
+    subgraph B["comprehensive_evidence_tool — asyncio.gather()"]
+        direction LR
+        T1["TavilyClient<br/>search_async()<br/>web_search · credibility 0.7"]
+        T2["WikipediaClient<br/>search_for_claim_async()<br/>wikipedia · credibility 0.8"]
+        T3["GoogleFactCheckClient<br/>search_fact_checks_async()<br/>fact_check · credibility 0.95"]
+    end
+
+    B --> E["EvidenceBundle<br/>combined evidence list<br/>+ SearchStatusSummary"]
+
+    E --> F([⚖️ Verdict Generation])
+
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style T1 fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    style T2 fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style T3 fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style E fill:#fefce8,stroke:#eab308,color:#713f12
+    style F fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+```
 
 ### 3.3. Domain Credibility Classification
 
