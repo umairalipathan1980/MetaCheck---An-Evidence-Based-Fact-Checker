@@ -126,28 +126,101 @@ flowchart TD
 
 ## 3. The Verification Pipeline: Multi-Agent Evidence Gathering
 
+Once the user selects claims, MetaCheck launches a parallel verification pipeline with one independent agent per claim, each gathering evidence using three tools simultaneously and producing a structured verdict. 
+
 ### 3.1. Parallel Agent Creation
 
-#### 3.1.1. One Agent Per Claim
+MetaCheck creates one orchestrator agent per selected claim and executes them all in parallel. Since the agents communicate no information with each other during evidence gathering, running them in parallel results in a much faster workflow.
 
-#### 3.1.2. Agent Spawning Code
+The agent is defined once in `backend/app/core/agents.py` and executed once per claim:
 
-#### 3.1.3. Orchestration Prompt
+```python
+# backend/app/core/agents.py
+
+orchestrator = Agent(
+    name="metacognitive_orchestrator",
+    model=MODEL_NAME,
+    instructions=f"""Fact-check orchestrator. For each claim:
+1. Use comprehensive_evidence_tool to gather ALL evidence
+   (Tavily web search + Wikipedia + Google Fact Check) in parallel
+2. For each Evidence object, analyze stance:
+   - Web / Wikipedia: set stance based on snippet content
+   - Fact check: stance set by rating interpretation
+3. Apply verdict criteria:
+   - SUPPORTED: Multiple credible sources (≥0.7) confirm, no contradictions
+   - REFUTED: Credible sources (≥0.7) explicitly contradict
+   - INSUFFICIENT_INFORMATION: <2 sources OR all <0.7 credibility
+   - CONFLICTING_EVIDENCE: Credible sources disagree on both sides
+4. Return VerificationResult with verdict, confidence (0–1),
+   justification, key_sources, evidence_list
+""",
+    tools=[comprehensive_evidence_tool],
+    output_type=OrchestratorOutput,
+)
+```
+
+The spawning happens in `backend/app/core/workflow.py`, where a task is created for each selected claim and all tasks are handed to `asyncio.gather()`:
+
+```python
+# backend/app/core/workflow.py
+
+semaphore = asyncio.Semaphore(int(os.getenv("METACHECK_MAX_CONCURRENCY", "5")))
+
+async def analyze_claim(claim_text: str):
+    async with semaphore:
+        agent_result = await Runner.run(
+            orchestrator,
+            (
+                f"{mode_instruction}\n"
+                "Use comprehensive_evidence_tool to gather ALL evidence in one parallel call.\n"
+                f"Claim to verify: {claim_text}"
+            ),
+            max_turns=5,
+        )
+        ...
+
+# One task per claim — all run in parallel
+claim_tasks = [analyze_claim_with_timeout(claim) for claim in claim_texts]
+claim_results = await asyncio.gather(*claim_tasks)
+```
+
+A semaphore bounds the maximum number of concurrently running agents (default: 5, configurable via `METACHECK_MAX_CONCURRENCY`), and each agent is wrapped in a timeout of 90 seconds (`per_claim_timeout_seconds` in `backend/app/core/tool_settings.py`) to prevent runaway calls.
+
+```mermaid
+flowchart TD
+    A([✅ Selected Claims]) --> B
+
+    subgraph B["workflow.py — asyncio.gather()"]
+        direction LR
+        T1["analyze_claim(claim 1)"]
+        T2["analyze_claim(claim 2)"]
+        T3["analyze_claim(claim 3)"]
+    end
+
+    B --> C1[orchestrator\nAgent 1]
+    B --> C2[orchestrator\nAgent 2]
+    B --> C3[orchestrator\nAgent 3]
+
+    C1 --> R([🗂️ claim_results])
+    C2 --> R
+    C3 --> R
+
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style B fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style C1 fill:#fefce8,stroke:#eab308,color:#713f12
+    style C2 fill:#fefce8,stroke:#eab308,color:#713f12
+    style C3 fill:#fefce8,stroke:#eab308,color:#713f12
+    style R fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+```
 
 ### 3.2. Parallel Evidence Gathering
 
 #### 3.2.1. Three Parallel Tools Per Agent
 - Tavily Web Search
-- Wikipedia Search
+- Wikipedia Search API
 - Google Fact Check API
 
 #### 3.2.2. Tool Execution Pattern
-
-#### 3.2.3. Tavily Service Implementation
-
-#### 3.2.4. Wikipedia Service Implementation
-
-#### 3.2.5. Fact Check Service Implementation
 
 #### 3.2.6. Evidence Aggregation
 
