@@ -88,20 +88,20 @@ The figure below shows the full claim extraction flow.
 
 ```mermaid
 flowchart TD
-    A([📄 Input Text\nmax 2000 chars]) --> B
+    A([📄 Input Text]) --> B
 
     subgraph B[" Claim Extraction Agent "]
         direction TB
-        B1[Parse text with\nEXTRACTION_INSTRUCTIONS prompt]
-        B2[Apply extraction criteria:\nFalsifiable · Specific · Contextualized · Verifiable]
-        B3[Split compound\nsentences into atomic claims]
-        B4[Score each claim\nby worthiness 0.0 – 1.0]
+        B1[Parse text with<br/>EXTRACTION_INSTRUCTIONS prompt]
+        B2[Apply extraction criteria:<br/>Falsifiable · Specific · Contextualized · Verifiable]
+        B3[Split compound<br/>sentences into atomic claims]
+        B4[Score each claim<br/>by worthiness 0.0 – 1.0]
         B1 --> B2 --> B3 --> B4
     end
 
-    B --> C[ClaimList\nup to 10 claims, ranked by worthiness]
+    B --> C[ClaimList ranked by worthiness]
 
-    C --> D{👤 User selects\nclaims to verify\nup to 5}
+    C --> D{👤 User selects<br/>claims to verify}
 
     D --> E1[✅ Claim 1\nworthiness 0.92]
     D --> E2[✅ Claim 2\nworthiness 0.85]
