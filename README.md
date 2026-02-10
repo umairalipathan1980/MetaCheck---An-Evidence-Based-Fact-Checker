@@ -1,351 +1,206 @@
-# MetaCheck
+# MetaCheck: Building an Educational AI Fact-Checker for Teaching Critical Thinking
 
-MetaCheck is an educational fact-checking tool designed to help students and educators learn how to evaluate information critically. Unlike commercial fact-checkers, MetaCheck's primary goal is educational transparency — showing students how AI systems verify claims, not just what verdict they reach.
+**Subtitle:** A multi-agent system that teaches learners how to verify information, not just what to believe
 
-It:
+---
+
+## Table of Contents
+
+1. Introduction
+2. Claim Extraction: From Text to Verifiable Statements
+3. The Verification Pipeline: Multi-Agent Evidence Gathering
+4. Educational Design: Learning Through Comparison
+
+---
+
+## 1. Introduction
+
+_(Already written by user)_
+
+Disinformation and fake news have become a global problem. The advancements in technology, in particular, artificial intelligence, have paved the way for creating and promoting disinformation via a myriad of ways.
+
+Disinformation can mislead people, shape public opinion, and weaken trust in institutions, especially during important events and crises. Higher education institutions (HEIs) are especially exposed to disinformation because students rely heavily on online information for learning, research, and everyday decisions. Therefore, both students and teachers should be equipped with the capabilities of assessing information.
+
+While AI can be used for creating and promoting disinformation, for instance, via fake images and videos, synthetic voice, and online bots, among others, it can also be used to assess information and detect disinformation.
+
+That said, using AI for disinformation detection also requires careful design because these models can produce confident but incorrect statements. Therefore, the AI literacy for disinformation should be focused on teaching learners what AI tools can and cannot do, how to verify AI-generated answers with independent sources, and how to document and reflect on their verification steps.
+
+In this article, we will develop an AI tool, MetaCheck, an educational fact-checking tool designed to help learners and educators evaluate information critically. Unlike commercial fact-checkers, MetaCheck's primary goal is educational transparency, demonstrating how AI systems verify claims, not just what verdict they reach.
+
+**MetaCheck:**
 - Extracts verifiable claims from text
-- Searches web, Wikipedia, and fact-check APIs for evidence
+- Searches the web, Wikipedia, and fact-check sources
 - Classifies domain credibility via a configurable taxonomy
-- Weighs evidence and issues structured verdicts with confidence
-- Surfaces full metacognitive detail for students (search strategy, stance, uncertainties, assumptions, verdict reasoning)
+- Weighs evidence and issues structured verdicts (Refuted, Supported, Insufficient Information) with confidence scores
+- Highlights full metacognitive detail for learners (search strategy, stance, uncertainties, assumptions, verdict reasoning)
 
-The tool lets the users first add their own assessment for a verification task, and then use AI to do the same verification, and compare their assessment with AI's assessment.
+The tool lets users first add their own assessment for a verification task, then use AI to perform the same verification, and compare their assessment with AI's. This way, the tool not only serves as an information checker, but also teaches learners how to assess information and how to improve their metacognitive process for information assessment.
 
-<p align="center">
-  <img src="images/1.png" width="75%" alt="Add your own assessment for a verification task"><br>
-  <em>Add your own assessment for a verification task</em>
-</p>
+The tool uses a multi-agentic approach to run the above-mentioned workflow. The complete workflow is shown in the figure below.
 
-<p align="center">
-  <img src="images/2.png" width="75%" alt="AI assessment (view 1)">
-</p>
+The tool extracts verifiable claims from the text and lets the user select what claims they want to verify. It then creates as many parallel agents as there are claims. Each agent runs three parallel tools: web search, Wikipedia search, and fact-check sources search. An aggregator aggregates the complete evidence and generates the final verdict.
 
-<p align="center">
-  <img src="images/3.png" width="75%" alt="AI assessment (view 2)"><br>
-  <em>AI assessment</em>
-</p>
+Let's dive in.
 
-<p align="center">
-  <img src="images/compare.png" width="75%" alt="Comparison of user vs. AI assessment with feedback"><br>
-  <em>Comparison of user vs. AI assessment with feedback</em>
-</p>
+---
 
-Stack: FastAPI backend + React/Vite frontend (Tailwind + shadcn-style components) powered by a modular core engine. Uses standard OpenAI (`OPENAI_API_KEY`) plus optional Google Fact Check and Wikipedia keys.
+## 2. Claim Extraction
 
-Verdicts: `SUPPORTED`, `REFUTED`, `INSUFFICIENT_INFORMATION`, `CONFLICTING_EVIDENCE`.
+Not every sentence in a text is worth verifying. MetaCheck therefore begins by identifying only the statements that are specific, falsifiable, and require consulting external sources to confirm or refute.
 
-## Architecture
+The user pastes any free-form text — a news article, a social media post, a research summary, or a student reading passage. Claim extraction is handled by the agent defined in `backend/app/agents.py`:
 
-```
-MetaCheck/
-├── backend/                    # FastAPI Backend
-│   ├── app/
-│   │   ├── core/              # Core MetaCheck Engine (modular)
-│   │   │   ├── __init__.py    # Public API: verify_claims, FinalAssessment
-│   │   │   ├── MetaCheck.py   # Facade (backward compatible re-exports)
-│   │   │   ├── models.py      # Pydantic data models
-│   │   │   ├── constants.py   # Verdict criteria, instructions, config
-│   │   │   ├── clients.py     # API clients (Google Fact Check, Wikipedia)
-│   │   │   ├── analysis.py    # MetacognitiveTracker
-│   │   │   ├── domain.py      # Domain classification logic
-│   │   │   ├── tools.py       # Function tools for agents (parallel evidence gathering)
-│   │   │   ├── agents.py      # Agent definitions (orchestrator, extractors)
-│   │   │   ├── workflow.py    # Main verify_claims function (parallel agent execution)
-│   │   │   └── settings.py    # Environment configuration
-│   │   ├── config/
-│   │   │   ├── config.json    # Domain credibility taxonomy
-│   │   │   └── settings.json  # Runtime configurable settings
-│   │   ├── api/
-│   │   │   └── routes.py      # FastAPI endpoints
-│   │   └── services/
-│   │       ├── metacheck_service.py  # Service layer wrapper
-│   │       └── comparison_service.py # Comparison analysis (direct LLM call)
-│   ├── main.py                # FastAPI app entry point
-│   └── requirements.txt
-│
-└── frontend/                   # React + Vite Frontend
-    ├── src/
-    │   ├── components/        # UI components
-    │   ├── hooks/             # Custom hooks (useVerify)
-    │   └── lib/               # API client, utilities
-    └── package.json
+```python
+# backend/app/agents.py
+
+claim_extractor = Agent(
+    name="claim_extractor",
+    instructions=EXTRACTION_INSTRUCTIONS,
+    model=MODEL_NAME,
+    output_type=ClaimList,
+)
 ```
 
-## Agentic Workflow Overview
+The agent is driven by `EXTRACTION_INSTRUCTIONS` (`backend/app/core/constants.py`) that instructs the model to behave like a professional fact-checker. The key criteria a statement must satisfy to be extracted as a claim are:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           INPUT TEXT                            │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               STEP 1: Claim Extraction Agent                    │
-│               (claim_extractor)                                 │
-│   • Extracts verifiable, falsifiable claims                     │
-│   • Filters opinions and common knowledge                       │
-│   • Splits compound claims into atomic statements               │
-│   • Returns claims with worthiness scores                       │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│            STEP 2: Claim Preview & Selection (UI)               │
-│   • Display all extracted claims with worthiness scores         │
-│   • Paginated view: 5 claims per page with prev/next buttons    │
-│   • User selects which claims to verify (checkbox UI)           │
-│   • Limits: 5 basic | 3 comprehensive (configurable)            │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                ┌────────────────┼────────────────┐
-                ▼                ▼                ▼
-       ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-       │Verification │  │Verification │  │Verification │
-       │  Agent 1    │  │  Agent 2    │  │  Agent N    │
-       └─────────────┘  └─────────────┘  └─────────────┘
-                │                │                │
-┌───────────────┴────────────────┴────────────────┴───────────────┐
-│   STEP 3: Parallel Verification (N agents run concurrently)     │
-│                                                                 │
-│   Each agent gathers evidence using ALL tools in PARALLEL:      │
-│                                                                 │
-│              ┌─────────────────┐                                │
-│              │  Tavily Web     │                                │
-│          ┌──▶│  Search         │──┐                             │
-│          │   └─────────────────┘  │                             │
-│          │                        │                             │
-│          │   ┌─────────────────┐  │                             │
-│  PARALLEL├──▶│  Wikipedia      │──┤                             │
-│   CALL   │   │  Search         │  │                             │
-│          │   └─────────────────┘  │                             │
-│          │                        │                             │
-│          │   ┌─────────────────┐  │                             │
-│          └──▶│ Google Fact     │──┘                             │
-│              │ Check API       │                                │
-│              └─────────────────┘                                │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ All evidence        │                             │
-│             │ gathered in parallel│                             │
-│             └─────────────────────┘                             │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ Apply domain        │                             │
-│             │ classification &    │                             │
-│             │ VERDICT_CRITERIA    │                             │
-│             └─────────────────────┘                             │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ VerificationResult  │                             │
-│             └─────────────────────┘                             │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              STEP 4: Aggregate & Return Results                 │
-│              • Collect all VerificationResults                  │
-│              • Aggregate search statuses                        │
-│              • Calculate overall confidence                     │
-│              • Return FinalAssessment                           │
-└─────────────────────────────────────────────────────────────────┘
+1. **Falsifiable** — it can be proven wrong
+2. **Specific** — it contains concrete details (numbers, dates, names, locations)
+3. **Contextualized** — it is tied to an entity, time, or place
+4. **Externally verifiable** — it requires consulting sources beyond general knowledge
+
+The prompt also instructs the agent to split compound sentences into individual claims when each fact requires different evidence. 
+
+The agent returns a structured `ClaimList` object (`backend/app/core/models.py`), where each item is a `Claim`:
+
+```python
+# backend/app/core/models.py
+
+class Claim(BaseModel):
+    text: str
+    worthiness_score: float = Field(ge=0.0, le=1.0, default=0.8)
+    extracted_at: datetime = Field(default_factory=datetime.now)
+    ...
 ```
 
-**Key Points:**
-- **Two-step workflow**: Extract → Select → Verify (user control over which claims to verify)
-- **Two levels of parallelism**:
-  1. **Agent-level**: N verification agents run concurrently (bounded by semaphore, default max: 5)
-  2. **Tool-level**: Within each agent, Tavily + Wikipedia + Google Fact Check gather evidence in parallel
-- **Each agent sees ALL evidence** before applying VERDICT_CRITERIA to make final verdict
-- Verdicts: `SUPPORTED`, `REFUTED`, `INSUFFICIENT_INFORMATION`, `CONFLICTING_EVIDENCE`
+Each extracted claim carries a `worthiness_score` between 0.0 and 1.0, assigned by the LLM during extraction. The user then selects which claim(s) to send to the verification pipeline. 
 
-## Main Components
+The figure below shows the full claim extraction flow.
 
-- **Core Engine (`backend/app/core/`)**: Modular multi-agent orchestration system with dual-level parallelism
-  - `models.py`: 16 Pydantic models for claims, evidence, verdicts, metacognitive detail
-  - `agents.py`: Agent definitions (claim_extractor, verification orchestrator)
-  - `workflow.py`: Parallel verification workflow - spawns N concurrent agents (asyncio.gather)
-  - `tools.py`: Parallel evidence gathering tools (Tavily + Wikipedia + Google Fact Check run concurrently)
-  - `domain.py`: Config-driven domain credibility classification
-  - `analysis.py`: MetacognitiveTracker
-  - `clients.py`: GoogleFactCheckClient, WikipediaClient
+```mermaid
+flowchart TD
+    A([📄 Input Text\nmax 2000 chars]) --> B
 
-- **Configuration System**:
-  - `backend/app/config/config.json`: Domain credibility taxonomy (0.50-0.85 range)
-  - `backend/app/config/settings.json`: Runtime configurable settings (claim limits, source limits, model, timeouts, Tavily search depth)
+    subgraph B[" Claim Extraction Agent "]
+        direction TB
+        B1[Parse text with\nEXTRACTION_INSTRUCTIONS prompt]
+        B2[Apply extraction criteria:\nFalsifiable · Specific · Contextualized · Verifiable]
+        B3[Split compound\nsentences into atomic claims]
+        B4[Score each claim\nby worthiness 0.0 – 1.0]
+        B1 --> B2 --> B3 --> B4
+    end
 
-- **Backend (`backend/`)**: FastAPI service with automatic module reload on settings changes
+    B --> C[ClaimList\nup to 10 claims, ranked by worthiness]
 
-- **Frontend (`frontend/`)**: React UI with Settings panel, student self-assessment, AI analysis, and concise comparison feedback
+    C --> D{👤 User selects\nclaims to verify\nup to 5}
 
-## Search Status Tracking
+    D --> E1[✅ Claim 1\nworthiness 0.92]
+    D --> E2[✅ Claim 2\nworthiness 0.85]
+    D --> E3[✅ Claim 3\nworthiness 0.78]
 
-MetaCheck now tracks the success/failure status of all evidence gathering operations. Each verification result includes a `search_status` object showing:
+    E1 --> F([➡️ Verification Pipeline])
+    E2 --> F
+    E3 --> F
 
-- **Status types**: `success`, `no_results`, `error`, `no_api_key`
-- **Tracked searches**: Wikipedia, Google Fact Check, Web Search
-- **Visibility**:
-  - API response includes `search_status` field in `FinalAssessment`
-  - Helps distinguish between "no evidence found" vs "search failed"
-
-This transparency helps students understand when API keys are missing or searches encounter errors, improving educational value.
-
-## Quickstart
-
-### 1. Backend
-```bash
-cd backend
-# Create .env (see .env.example)
-# Required: OPENAI_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD, USER_USERNAME, USER_PASSWORD
-# Recommended: TAVILY_API_KEY, GOOGLE_FACT_CHECK_API_KEY, WIKIPEDIA_ACCESS_TOKEN
-
-python -m venv .venv && .\.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # macOS/Linux
-
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-Health check: `http://localhost:8000/api/health`
-
-### Backend `.env` setup
-
-Create `backend/.env` with at least:
-
-```env
-# Core model access (required)
-OPENAI_API_KEY=your_openai_api_key
-
-# Logins (required)
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_admin_password
-USER_USERNAME=user
-USER_PASSWORD=your_user_password
-
-# Evidence source APIs (recommended)
-TAVILY_API_KEY=your_tavily_api_key
-GOOGLE_FACT_CHECK_API_KEY=your_google_fact_check_api_key
-WIKIPEDIA_ACCESS_TOKEN=your_wikipedia_access_token
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style B fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style C fill:#fefce8,stroke:#eab308,color:#713f12
+    style D fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style E1 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style E2 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style E3 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style F fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
 ```
 
-Notes:
-- `OPENAI_API_KEY` is required for claim extraction, verification, and comparison feedback.
-- `TAVILY_API_KEY` is strongly recommended for robust web evidence retrieval.
-- `GOOGLE_FACT_CHECK_API_KEY` and `WIKIPEDIA_ACCESS_TOKEN` improve coverage; if missing, those searches will be skipped and reflected in `search_status`.
 
-### How to get the API keys
+---
 
-1. **Tavily API key**
-- Go to the Tavily platform and create an account.
-- Generate an API key from your account dashboard.
-- Add it as `TAVILY_API_KEY` in `backend/.env`.
-- Tavily typically offers a free tier (commonly up to 1,000 searches/month; verify current limits on their pricing page).
+## 3. The Verification Pipeline: Multi-Agent Evidence Gathering
 
-2. **Google Fact Check API key**
-- Open Google Cloud Console.
-- Create/select a project.
-- Enable the **Fact Check Tools API**.
-- Create an API key under **APIs & Services > Credentials**.
-- Add it as `GOOGLE_FACT_CHECK_API_KEY` in `backend/.env`.
+### 3.1. Parallel Agent Creation
 
-3. **Wikipedia access token**
-- Create a Wikimedia account.
-- Generate an access token via Wikimedia developer/auth tooling.
-- Add it as `WIKIPEDIA_ACCESS_TOKEN` in `backend/.env`.
-- If omitted, Wikipedia requests may still work in some contexts, but authenticated access is recommended for reliability.
+#### 3.1.1. One Agent Per Claim
 
-### 2. Frontend
-```bash
-cd frontend
-# Create .env with VITE_API_URL=http://localhost:8000
+#### 3.1.2. Agent Spawning Code
 
-npm install
-npm run dev  # default: http://localhost:5173
-```
+#### 3.1.3. Orchestration Prompt
 
-## How to Use
+### 3.2. Parallel Evidence Gathering
 
-MetaCheck is designed for **educational learning**, not just quick fact-checking. The most effective way to develop critical thinking skills is to follow the complete three-step learning sequence:
+#### 3.2.1. Three Parallel Tools Per Agent
+- Tavily Web Search
+- Wikipedia Search
+- Google Fact Check API
 
-### Step 1: Create Your Assessment First
+#### 3.2.2. Tool Execution Pattern
 
-**Tab: "Your Assessment"**
+#### 3.2.3. Tavily Service Implementation
 
-Start here before using AI analysis:
+#### 3.2.4. Wikipedia Service Implementation
 
-- Read the text you want to fact-check
-- Manually identify verifiable claims (statements that can be proven true or false)
-- Research each claim using search engines, Wikipedia, fact-checking sites, etc.
-- For each claim, create your assessment:
-  - **Claim text**: The specific statement you're verifying
-  - **Verdict**: Your conclusion (SUPPORTED, REFUTED, INSUFFICIENT_INFORMATION, or CONFLICTING_EVIDENCE)
-  - **Confidence**: How sure are you? (0-100%)
-  - **Reasoning**: Explain why you reached this verdict
-  - **Sources**: List the evidence sources you consulted (with URLs)
-  - **Time spent**: Track how long it took you to verify this claim
+#### 3.2.5. Fact Check Service Implementation
 
-### Step 2: Run AI Analysis
+#### 3.2.6. Evidence Aggregation
 
-**Tab: "AI Analysis"**
+### 3.3. Domain Credibility Classification
 
-After completing your own assessment, let MetaCheck analyze the same text:
+#### 3.3.1. Configurable Taxonomy Structure
 
-1. **Extract Claims** (max 2,000 characters of input text)
-   - AI automatically identifies verifiable, falsifiable claims
-   - Filters out opinions, common knowledge, and vague statements
-   - Splits compound claims into atomic statements
-   - Assigns worthiness scores to help prioritize verification
+#### 3.3.2. Domain Categories and Weights
 
-2. **Preview & Select Claims** (paginated view: 5 claims per page)
-   - Review all extracted claims with their worthiness scores
-   - Select which claims to verify using checkboxes
-   - Limits: 5 claims in basic mode, 3 in comprehensive mode (configurable via Settings)
+#### 3.3.3. Domain Matching Algorithm
 
-3. **Choose Mode**:
-   - **Basic Mode (Fast and concise)**: Concise output with verdicts, confidence, and key sources
-   - **Comprehensive Mode (Takes longer)**: Full metacognitive detail showing how the AI reasoned through the verification (search strategies, source assessments, uncertainties, assumptions, verdict logic)
+#### 3.3.4. Applying Credibility Weights
 
-4. **View Results**: Each verified claim shows:
-   - Verdict with confidence score
-   - Multiple evidence sources (Tavily web search, Wikipedia, Google Fact Check)
-   - Source credibility scores with domain classification
-   - Justification explaining the reasoning
-   - Evidence breakdown by stance (supporting, refuting, neutral, unclear)
-   - Search status tracking (which searches succeeded/failed)
+### 3.4. Verdict Generation
 
-**Evidence Sources**: The AI gathers information in parallel from:
-- **Tavily Web Search**: Real-time web results with domain credibility classification (0.50-0.85)
-- **Wikipedia**: Reliable encyclopedia content (fixed credibility: 0.8)
-- **Google Fact Check**: Professional fact-checker verdicts (fixed credibility: 0.95)
+#### 3.4.1. LLM Reasoning with Evidence
 
-### Step 3: Compare & Learn
+#### 3.4.2. Verdict Categories
 
-**Tab: "Compare"**
+#### 3.4.3. Confidence Scoring Logic
 
-See side-by-side differences between your assessment and the AI's analysis:
+#### 3.4.4. Metacognitive Detail (Comprehensive Mode)
 
-- **Visual Comparison**: Your claims vs AI claims in parallel columns
-- **Match Indicators**: See where you agreed or differed with the AI
-- **Detailed Differences**: Compare verdicts, confidence levels, sources used, and reasoning approaches
-- **AI Feedback**: Click "Analyze My Performance" to get concise educational feedback:
-  - Brief summary of how your assessment compared to the AI's
-  - Specific areas for improvement (2-4 actionable suggestions)
-  - Helps you identify blind spots and learning opportunities
+---
 
-**Why comparison matters**: This step reveals your blind spots, shows alternative research approaches, and helps you calibrate confidence. It's where you learn what you might have missed or where you excelled.
+## 4. Educational Design: Learning Through Comparison
 
-### Additional Features
+### 4.1. Student Self-Assessment
 
-- **Settings Panel**: Configure verification behavior without code changes
-  - Adjust claim limits per mode (basic/comprehensive)
-  - Set maximum sources per evidence type (Tavily, Wikipedia, Google Fact Check)
-  - Choose AI model (GPT-5.1, GPT-4.1-mini, GPT-5-mini)
-  - Set per-claim timeout and Tavily search depth (basic/advanced)
-  - Changes apply immediately via automatic backend reload
+#### 4.1.1. Assessment Interface
 
-- **In-App Documentation**: Complete user guide covering workflow, modes, verdicts, evidence weighting, source credibility, and educational best practices, plus full domain taxonomy reference
+#### 4.1.2. Guided Assessment Framework
 
-### Quick Option: Direct AI Analysis
+### 4.2. Side-by-Side Comparison
 
-If you need fast verification without the learning workflow, you can skip directly to "AI Analysis" and use it as a standalone fact-checker. However, you'll miss the educational benefits of independent critical thinking and self-assessment.
+#### 4.2.1. Comparison Interface Design
+
+#### 4.2.2. What Gets Compared
+
+### 4.3. AI-Generated Learning Feedback
+
+#### 4.3.1. Comparison Service Implementation
+
+#### 4.3.2. Feedback Generation
+
+#### 4.3.3. Constructive Improvement Suggestions
+
+---
+
+## Closing
+
+If you try MetaCheck in your classroom or adapt it for your institution, I would be interested to hear about your experience. If you encounter issues or have suggestions for educational use cases, feel free to share them in the comments.
+
+---
+
+**GitHub Repository:** [MetaCheck - An Evidence-Based Fact Checker](https://github.com/umairalipathan1980/MetaCheck---An-Evidence-Based-Fact-Checker)
