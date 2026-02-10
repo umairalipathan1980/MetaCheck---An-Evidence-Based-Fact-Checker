@@ -103,9 +103,9 @@ flowchart TD
 
     C --> D{👤 User selects<br/>claims to verify}
 
-    D --> E1[✅ Claim 1\nworthiness 0.92]
-    D --> E2[✅ Claim 2\nworthiness 0.85]
-    D --> E3[✅ Claim 3\nworthiness 0.78]
+    D --> E1[✅ Claim 1<br/>worthiness 0.92]
+    D --> E2[✅ Claim 2<br/>worthiness 0.85]
+    D --> E3[✅ Claim 3<br/>worthiness 0.78]
 
     E1 --> F([➡️ Verification Pipeline])
     E2 --> F
