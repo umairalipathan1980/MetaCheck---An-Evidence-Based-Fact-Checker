@@ -467,25 +467,43 @@ flowchart TD
 
 ## 4. Educational Design: Learning Through Comparison
 
-### 4.1. Student Self-Assessment
+Most fact-checkers give users a verdict and stop there. MetaCheck goes further. Before the AI assessment, the user can extract claims from a text manually and record their own assessment of each claim. After verification, the tool places the two assessments side by side and generates targeted feedback. The goal is metacognitive — to make the learner aware of where their reasoning differs from evidence-based analysis and why.
 
-#### 4.1.1. Assessment Interface
+With the side-by-side comparison, the user can also analyze their performance through a comparison service (`backend/app/services/comparison_service.py`), which sends both the student claims and the AI results to an LLM and returns structured feedback.
 
-#### 4.1.2. Guided Assessment Framework
+```mermaid
+flowchart TD
+    A([👤 Student]) --> B["Fill assessment form<br/>StudentAssessment.jsx<br/>verdict · confidence · reasoning · sources"]
+    A --> C["Run AI Verification<br/>parallel agents pipeline"]
 
-### 4.2. Side-by-Side Comparison
+    B --> D["Compare Tab<br/>ComparePanel.jsx"]
+    C --> D
 
-#### 4.2.1. Comparison Interface Design
+    D --> E["Side-by-side layout:<br/>verdict match badge ✓ / ⚠<br/>confidence delta<br/>reasoning · sources"]
 
-#### 4.2.2. What Gets Compared
+    E --> F{{"Analyze My<br/>Performance"}}
+    F --> G["comparison_service.py<br/>run_comparison_analysis()"]
 
-### 4.3. AI-Generated Learning Feedback
+    G --> H["LLM generates<br/>ComparisonAnalysis"]
 
-#### 4.3.1. Comparison Service Implementation
+    H --> I["overall_summary<br/>indigo panel"]
+    H --> J["areas_for_improvement<br/>amber panel"]
 
-#### 4.3.2. Feedback Generation
+    I --> K([📚 Student learns])
+    J --> K
 
-#### 4.3.3. Constructive Improvement Suggestions
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style B fill:#fefce8,stroke:#eab308,color:#713f12
+    style C fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style D fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style E fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style F fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style G fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style H fill:#fefce8,stroke:#eab308,color:#713f12
+    style I fill:#e0e7ff,stroke:#6366f1,color:#1e1b4b
+    style J fill:#fef3c7,stroke:#f59e0b,color:#713f12
+    style K fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+```
 
 ---
 
