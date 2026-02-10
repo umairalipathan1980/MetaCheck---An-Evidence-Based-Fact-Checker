@@ -241,7 +241,7 @@ async def comprehensive_evidence_tool(claim: str, mode: str = "basic") -> Eviden
     return EvidenceBundle(evidence=combined, search_status=SearchStatusSummary(...))
 ```
 
-**Tavily** (`TavilyClient.search_async`) queries the web and returns results ranked by a relevance score. Each result is wrapped in an `Evidence`.
+**Tavily** (`TavilyClient.search_async`) queries the web and returns results ranked by a relevance score. Each result is wrapped in an `Evidence`. The credibility of web search sources (0.50-0.85) is determined from a domain taxonomy (explained later).
 
 **Wikipedia** (`WikipediaClient.search_for_claim_async`) queries the Wikipedia REST API and fetches page summaries. Wikipedia evidence gets a fixed credibility score of 0.8, reflecting its community-edited but generally reliable nature. 
 
@@ -262,30 +262,8 @@ class Evidence(BaseModel):
     stance: Optional[Literal["supports", "refutes", "neutral", "unclear"]] = None
 ```
 
-The agent then reads each snippet to assign stance for each source's evidence, before proceeding to verdict generation.
+The agent then reads each snippet to assign a stance (supports, refutes, neutral, unclear) for each source's evidence, before proceeding to verdict generation.
 
-```mermaid
-flowchart TD
-    A([🔍 orchestrator Agent]) --> B["comprehensive_evidence_tool(claim)"]
-
-    subgraph B["comprehensive_evidence_tool — asyncio.gather()"]
-        direction LR
-        T1["TavilyClient<br/>search_async()<br/>web_search · credibility 0.7"]
-        T2["WikipediaClient<br/>search_for_claim_async()<br/>wikipedia · credibility 0.8"]
-        T3["GoogleFactCheckClient<br/>search_fact_checks_async()<br/>fact_check · credibility 0.95"]
-    end
-
-    B --> E["EvidenceBundle<br/>combined evidence list<br/>+ SearchStatusSummary"]
-
-    E --> F([⚖️ Verdict Generation])
-
-    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    style T1 fill:#fff7ed,stroke:#f97316,color:#7c2d12
-    style T2 fill:#f0fdf4,stroke:#22c55e,color:#14532d
-    style T3 fill:#fdf4ff,stroke:#a855f7,color:#581c87
-    style E fill:#fefce8,stroke:#eab308,color:#713f12
-    style F fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-```
 
 ### 3.3. Domain Credibility Classification
 
