@@ -336,9 +336,9 @@ for evidence in claim_result.evidence_list:
 
 ```mermaid
 flowchart TD
-    A([🌐 Web Evidence\nsource_type = web_search]) --> B
+    A([🌐 Web Evidence]) --> B
 
-    subgraph B["classify_web_source(url) — domain.py"]
+    subgraph B["classify_web_source(url)"]
         direction TB
         B1["1. Exact domain match<br/>in whitelist?"]
         B2["2. Subdomain suffix match?<br/>.wordpress.com · .github.io · ..."]
