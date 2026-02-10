@@ -267,13 +267,101 @@ The agent then reads each snippet to assign a stance (supports, refutes, neutral
 
 ### 3.3. Domain Credibility Classification
 
-#### 3.3.1. Configurable Taxonomy Structure
+The sources returned by Tavily web search are assigned different weights. A government health agency and a personal blog may both appear in Tavily results, but treating them as equally credible would distort the final verdict. MetaCheck therefore runs every web search result through a domain-based classification step that assigns it a score from a configurable taxonomy.
 
-#### 3.3.2. Domain Categories and Weights
+The taxonomy lives in `backend/app/config/config.json` and defines 8 credibility tiers, each with a score, a list of matching domains, subdomain suffixes, and TLD patterns:
 
-#### 3.3.3. Domain Matching Algorithm
+```json
+// backend/app/config/config.json (representative excerpt)
 
-#### 3.3.4. Applying Credibility Weights
+{
+  "default_score": 0.6,
+  "categories": {
+    "government_public":    { "score": 0.85, "tld_patterns": [".gov", ".gov.uk", ...],
+                              "domain_whitelist": ["who.int", "un.org", "europa.eu", ...] },
+    "scientific_journals":  { "score": 0.82, "domain_whitelist": ["nature.com", "science.org", ...] },
+    "academic_research":    { "score": 0.80, "tld_patterns": [".edu", ".ac.uk", ".ac.jp", ...],
+                              "domain_whitelist": ["ieee.org", "researchgate.net", ...] },
+    "institutional_medical":{ "score": 0.75, "domain_whitelist": ["cdc.gov", "nih.gov", "mayoclinic.org", ...] },
+    "established_news":     { "score": 0.75, "domain_whitelist": ["nytimes.com", "bbc.com", "reuters.com", ...] },
+    "think_tanks":          { "score": 0.72, "domain_whitelist": ["brookings.edu", "rand.org", ...] },
+    "international_news":   { "score": 0.70, "domain_whitelist": ["aljazeera.com", "dw.com", ...] },
+    "user_generated":       { "score": 0.50, "domain_whitelist": ["reddit.com", "medium.com", ...],
+                              "subdomain_suffixes": [".github.io", ".wordpress.com", ".blogspot.com", ...] },
+    "general_web":          { "score": 0.60 }  // default fallback
+  }
+}
+```
+
+The classification function `classify_web_source()` (`backend/app/core/domain.py`) walks through the categories in a fixed resolution order and returns on the first match. The matching hierarchy within each category is:
+
+1. **Exact domain whitelist** — `nature.com` → `scientific_journals` (0.82)
+2. **Subdomain suffix** — `myblog.wordpress.com` → `user_generated` (0.50)
+3. **TLD pattern** — `health.gov.au` → `government_public` (0.85)
+4. **Fallback** — no match → `general_web` (0.60)
+
+```python
+# backend/app/core/domain.py
+
+def classify_web_source(url: str, ...) -> Dict:
+    domain = parsed.netloc.lower().lstrip("www.")
+
+    for category_key in resolution_order:
+        category = categories[category_key]
+
+        if domain in category.get("domain_whitelist", []):
+            return {"credibility_score": category["score"], "category": category_key, ...}
+
+        for suffix in category.get("subdomain_suffixes", []):
+            if domain.endswith(suffix):
+                return {"credibility_score": category["score"], ...}
+
+        for tld in category.get("tld_patterns", []):
+            if domain.endswith(tld):
+                return {"credibility_score": category["score"], ...}
+
+    return {"credibility_score": default_score, "category": "general_web", ...}  # 0.6
+```
+
+Classification is applied in `backend/app/core/workflow.py` after evidence gathering, writing the score on each web search `Evidence` object. Wikipedia (0.80) and fact-check sources (0.95) use fixed scores and are not passed through this step.
+
+```python
+# backend/app/core/workflow.py
+
+for evidence in claim_result.evidence_list:
+    if evidence.source_type == "web_search" and evidence.url:
+        classification = classify_web_source(evidence.url)
+        evidence.credibility_score = classification["credibility_score"]
+```
+
+```mermaid
+flowchart TD
+    A([🌐 Web Evidence\nsource_type = web_search]) --> B
+
+    subgraph B["classify_web_source(url) — domain.py"]
+        direction TB
+        B1["1. Exact domain match<br/>in whitelist?"]
+        B2["2. Subdomain suffix match?<br/>.wordpress.com · .github.io · ..."]
+        B3["3. TLD pattern match?<br/>.gov · .edu · .ac.uk · ..."]
+        B4["4. Fallback<br/>general_web · score = 0.60"]
+        B1 -->|no| B2
+        B2 -->|no| B3
+        B3 -->|no| B4
+    end
+
+    B1 -->|yes| S1["Score from category<br/>e.g. 0.85 · 0.82 · 0.75 ..."]
+    B2 -->|yes| S1
+    B3 -->|yes| S1
+
+    S1 --> C["evidence.credibility_score updated"]
+    B4 --> C
+
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style B fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style B4 fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style S1 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style C fill:#fefce8,stroke:#eab308,color:#713f12
+```
 
 ### 3.4. Verdict Generation
 
