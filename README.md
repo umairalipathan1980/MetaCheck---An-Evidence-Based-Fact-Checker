@@ -365,11 +365,101 @@ flowchart TD
 
 ### 3.4. Verdict Generation
 
-#### 3.4.1. LLM Reasoning with Evidence
+With all evidence gathered and credibility scores assigned, the orchestrator agent synthesizes the `EvidenceBundle` into a structured verdict. The agent reads every evidence snippet, considers each source's credibility and stance, and applies the verdict criteria defined in `VERDICT_CRITERIA` (`backend/app/core/constants.py`).
 
-#### 3.4.2. Verdict Categories
+There are four possible verdicts:
 
-#### 3.4.3. Confidence Scoring Logic
+- **`SUPPORTED`** — multiple credible sources (≥ 0.7) confirm the claim with no credible contradictions
+- **`REFUTED`** — credible sources (≥ 0.7) explicitly contradict the claim; a single high-credibility refutation (> 0.8) outweighs several low-credibility sources supporting it
+- **`INSUFFICIENT_INFORMATION`** — fewer than 2 sources total, or all sources fall below 0.7 credibility, or evidence is too vague/outdated to decide
+- **`CONFLICTING_EVIDENCE`** — multiple credible sources (≥ 0.7) disagree on both sides with no clear resolution
+
+The confidence score (0.0–1.0) reflects how strongly the evidence supports the verdict, weighted by source credibility. The rules are explicit in the prompt:
+
+```
+Evidence Weighting Rules (VERDICT_CRITERIA in backend/app/core/constants.py):
+
+Credibility thresholds:
+  - High-credibility: > 0.8   (fact-checkers 0.95, top government/science sites 0.82-0.85)
+  - Credible:        >= 0.7   (Wikipedia 0.80, established news 0.75, web sources 0.70-0.85)
+  - Low-credibility:  < 0.7   (general web 0.60, user-generated 0.50)
+
+Decision priority:
+  1. Credible sources (>=0.7) dominate verdict — they outweigh any number of low-credibility sources
+  2. Compare total credibility weight on each side (sum of credibility scores)
+  3. Only use INSUFFICIENT_INFORMATION when no credible sources exist or all stances are unclear
+```
+
+The agent returns a `VerificationResult` (`backend/app/core/models.py`):
+
+```python
+# backend/app/core/models.py
+
+class VerificationResult(BaseModel):
+    claim:               str
+    verdict:             Literal["SUPPORTED", "REFUTED", "INSUFFICIENT_INFORMATION", "CONFLICTING_EVIDENCE"]
+    confidence:          float                        # 0.0 – 1.0
+    justification:       str                          # 1 sentence (basic) or full reasoning (comprehensive)
+    key_sources:         List[str]                    # "Source Name [URL]"
+    evidence_list:       List[Evidence] = []
+    metacognitive_steps: List[MetacognitiveStep] = []
+    metacognitive_detail: Optional[MetacognitiveDetail] = None
+```
+
+The `metacognitive_detail` field has two modes. In **comprehensive mode**, the agent populates it with a full educational record:
+
+```python
+# backend/app/core/models.py
+
+class MetacognitiveDetail(BaseModel):
+    search_queries:         List[SearchQuery] = []   # Queries generated and why
+    search_strategy_summary: str = ""
+    sources_found:          int = 0
+    sources_assessed:       List[SourceAssessment] = []
+    sources_rejected:       List[RejectedSource] = []  # Sources found but excluded
+    contradiction_detection: Optional[ContradictionDetection] = None
+    verdict_reasoning:      Optional[VerdictReasoning] = None
+    ai_uncertainties:       List[str] = []           # What the AI couldn't determine
+    assumptions_made:       List[str] = []
+    potential_weaknesses:   List[str] = []           # Where this assessment might be wrong
+    metacognitive_summary:  str = ""
+    total_assessment_time:  Optional[float] = None   # Seconds
+```
+
+In **basic mode**, both `metacognitive_steps` and `metacognitive_detail` are stripped from the result after verification completes, keeping the response concise:
+
+```python
+# backend/app/core/workflow.py
+
+if selected_mode == "basic":
+    for cr in claim_results:
+        cr.metacognitive_steps = []
+        cr.metacognitive_detail = None
+```
+
+```mermaid
+flowchart TD
+    A([📦 EvidenceBundle<br/>with credibility scores]) --> B
+
+    subgraph B["orchestrator — LLM Reasoning"]
+        direction TB
+        B1["Read snippet + credibility + stance<br/>for each Evidence object"]
+        B2["Apply VERDICT_CRITERIA:<br/>weight evidence by credibility score"]
+        B3["Select verdict +<br/>calculate confidence 0.0–1.0"]
+        B1 --> B2 --> B3
+    end
+
+    B3 --> V{"Mode?"}
+
+    V -->|basic| R1["VerificationResult<br/>verdict · confidence<br/>justification · key_sources<br/>evidence_list"]
+    V -->|comprehensive| R2["VerificationResult<br/>+ MetacognitiveDetail<br/>search queries · sources assessed<br/>verdict reasoning · uncertainties<br/>assumptions · weaknesses"]
+
+    style A fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style B fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style V fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style R1 fill:#fefce8,stroke:#eab308,color:#713f12
+    style R2 fill:#dcfce7,stroke:#16a34a,color:#14532d
+```
 
 #### 3.4.4. Metacognitive Detail (Comprehensive Mode)
 
