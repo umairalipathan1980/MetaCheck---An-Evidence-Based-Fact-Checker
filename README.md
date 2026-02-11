@@ -73,84 +73,78 @@ MetaCheck/
 
 ## Agentic Workflow Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           INPUT TEXT                            │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               STEP 1: Claim Extraction Agent                    │
-│               (claim_extractor)                                 │
-│   • Extracts verifiable, falsifiable claims                     │
-│   • Filters opinions and common knowledge                       │
-│   • Splits compound claims into atomic statements               │
-│   • Returns claims with worthiness scores                       │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│            STEP 2: Claim Preview & Selection (UI)               │
-│   • Display all extracted claims with worthiness scores         │
-│   • Paginated view: x claims per page with prev/next buttons    │
-│   • User selects which claims to verify (checkbox UI)           │
-│   • Limits: basic | comprehensive (configurable)                │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                ┌────────────────┼────────────────┐
-                ▼                ▼                ▼
-       ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-       │Verification │  │Verification │  │Verification │
-       │  Agent 1    │  │  Agent 2    │  │  Agent N    │ ...
-       └─────────────┘  └─────────────┘  └─────────────┘
-                │                │                │
-┌───────────────┴────────────────┴────────────────┴───────────────┐
-│   STEP 3: Parallel Verification (N agents run concurrently)     │
-│                                                                 │
-│   Each agent gathers evidence using ALL tools in PARALLEL:      │
-│                                                                 │
-│              ┌─────────────────┐                                │
-│              │  Tavily Web     │                                │
-│          ┌──▶│  Search         │──┐                             │
-│          │   └─────────────────┘  │                             │
-│          │                        │                             │
-│          │   ┌─────────────────┐  │                             │
-│  PARALLEL├──▶│  Wikipedia      │──┤                             │
-│   CALL   │   │  Search         │  │                             │
-│          │   └─────────────────┘  │                             │
-│          │                        │                             │
-│          │   ┌─────────────────┐  │                             │
-│          └──▶│ Google Fact     │──┘                             │
-│              │ Check API       │                                │
-│              └─────────────────┘                                │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ All evidence        │                             │
-│             │ gathered in parallel│                             │
-│             └─────────────────────┘                             │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ Apply domain        │                             │
-│             │ classification &    │                             │
-│             │ VERDICT_CRITERIA    │                             │
-│             └─────────────────────┘                             │
-│                        │                                        │
-│                        ▼                                        │
-│             ┌─────────────────────┐                             │
-│             │ VerificationResult  │                             │
-│             └─────────────────────┘                             │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              STEP 4: Aggregate & Return Results                 │
-│              • Collect all VerificationResults                  │
-│              • Aggregate search statuses                        │
-│              • Calculate overall confidence                     │
-│              • Return FinalAssessment                           │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    IN([📄 Input Text]) --> S1
+
+    subgraph S1["① Claim Extraction Agent · claim_extractor"]
+        direction TB
+        S1A["Extract verifiable, falsifiable claims<br/>Filter opinions & common knowledge<br/>Split compound claims into atomic statements"]
+        S1B["ClaimList + worthiness scores 0.0 – 1.0"]
+        S1A --> S1B
+    end
+
+    S1 --> S2
+
+    subgraph S2["② Claim Preview & Selection"]
+        direction TB
+        S2A["Display all claims ranked by worthiness"]
+        S2B["👤 User selects claims to verify<br/>Configurable limits: basic · comprehensive"]
+        S2A --> S2B
+    end
+
+    S2 --> A1 & A2 & AN
+
+    subgraph S3["③ Parallel Verification Agents · asyncio.gather()"]
+        subgraph A1["Verification Agent 1"]
+            T1a["🌐 Tavily"] & T1b["📖 Wikipedia"] & T1c["✅ Fact Check"] --> R1["VerificationResult 1"]
+        end
+        subgraph A2["Verification Agent 2"]
+            T2a["🌐 Tavily"] & T2b["📖 Wikipedia"] & T2c["✅ Fact Check"] --> R2["VerificationResult 2"]
+        end
+        subgraph AN["Verification Agent N"]
+            TNa["🌐 Tavily"] & TNb["📖 Wikipedia"] & TNc["✅ Fact Check"] --> RN["VerificationResult N"]
+        end
+    end
+
+    R1 & R2 & RN --> AGG["Apply domain credibility classification<br/>Apply VERDICT_CRITERIA · assign verdicts &amp; confidence"]
+
+    AGG --> S4
+
+    subgraph S4["④ Aggregate & Return Results"]
+        direction TB
+        S4A["Collect all VerificationResults<br/>Aggregate search statuses"]
+        S4B["📋 FinalAssessment"]
+        S4A --> S4B
+    end
+
+    style IN fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style S1 fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style S1A fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style S1B fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style S2 fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style S2A fill:#f3e8ff,stroke:#a855f7,color:#581c87
+    style S2B fill:#f3e8ff,stroke:#a855f7,color:#581c87
+    style S3 fill:#fffbeb,stroke:#f59e0b,color:#451a03
+    style A1 fill:#fefce8,stroke:#eab308,color:#713f12
+    style A2 fill:#fefce8,stroke:#eab308,color:#713f12
+    style AN fill:#fefce8,stroke:#eab308,color:#713f12
+    style T1a fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style T1b fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style T1c fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style T2a fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style T2b fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style T2c fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style TNa fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style TNb fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style TNc fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style R1 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style R2 fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style RN fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style AGG fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style S4 fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style S4A fill:#bfdbfe,stroke:#3b82f6,color:#1e3a5f
+    style S4B fill:#bfdbfe,stroke:#3b82f6,color:#1e3a5f
 ```
 
 **Key Points:**
