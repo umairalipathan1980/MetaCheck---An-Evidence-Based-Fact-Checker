@@ -77,7 +77,7 @@ MetaCheck/
 flowchart TD
     IN([📄 Input Text]) --> S1
 
-    subgraph S1["① <b>Claim Extraction Agent</b>]
+    subgraph S1["① Claim Extraction Agent"]
         direction TB
         S1A["Extract verifiable, falsifiable claims<br/>Filter opinions & common knowledge<br/>Split compound claims into atomic statements"]
         S1B["ClaimList + worthiness scores 0.0 – 1.0"]
@@ -111,7 +111,7 @@ flowchart TD
 
     AGG --> S4
 
-    subgraph S4["④ <b>Aggregate Results</b>"]
+    subgraph S4["④ Aggregate Results"]
         direction TB
         S4A["Collect all VerificationResults<br/>Aggregate search statuses"]
         S4B["📋 Final Assessment"]
