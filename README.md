@@ -86,7 +86,7 @@ flowchart TD
 
     S1 --> S2
 
-    subgraph S2["② Claim Preview & Selection"]
+    subgraph S2["② Claim Selection"]
         direction TB
         S2A["Display all claims ranked by worthiness"]
         S2B["👤 User selects claims to verify<br/>Configurable limits: basic · comprehensive"]
