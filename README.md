@@ -77,7 +77,7 @@ MetaCheck/
 flowchart TD
     IN([📄 Input Text]) --> S1
 
-    subgraph S1["① Claim Extraction Agent · claim_extractor"]
+    subgraph S1["① <b>Claim Extraction Agent</b>]
         direction TB
         S1A["Extract verifiable, falsifiable claims<br/>Filter opinions & common knowledge<br/>Split compound claims into atomic statements"]
         S1B["ClaimList + worthiness scores 0.0 – 1.0"]
@@ -96,13 +96,13 @@ flowchart TD
     S2 --> A1 & A2 & AN
 
     subgraph S3["③ Parallel Verification Agents · asyncio.gather()"]
-        subgraph A1["Verification Agent 1"]
+        subgraph A1["<b>Verification Agent 1</b>"]
             T1a["🌐 Tavily"] & T1b["📖 Wikipedia"] & T1c["✅ Fact Check"] --> R1["VerificationResult 1"]
         end
-        subgraph A2["Verification Agent 2"]
+        subgraph A2["<b>Verification Agent 2</b>"]
             T2a["🌐 Tavily"] & T2b["📖 Wikipedia"] & T2c["✅ Fact Check"] --> R2["VerificationResult 2"]
         end
-        subgraph AN["Verification Agent N"]
+        subgraph AN["<b>Verification Agent N</b>"]
             TNa["🌐 Tavily"] & TNb["📖 Wikipedia"] & TNc["✅ Fact Check"] --> RN["VerificationResult N"]
         end
     end
@@ -111,10 +111,10 @@ flowchart TD
 
     AGG --> S4
 
-    subgraph S4["④ Aggregate & Return Results"]
+    subgraph S4["④ <b>Aggregate Results</b>"]
         direction TB
         S4A["Collect all VerificationResults<br/>Aggregate search statuses"]
-        S4B["📋 FinalAssessment"]
+        S4B["📋 Final Assessment"]
         S4A --> S4B
     end
 
