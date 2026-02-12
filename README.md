@@ -186,9 +186,11 @@ MetaCheck now tracks the success/failure status of all evidence gathering operat
 
 This transparency helps students understand when API keys are missing or searches encounter errors, improving educational value.
 
-## Quickstart
+## Installation
 
-### 1. Backend
+### Method 1: Local Installation (Backend + Frontend)
+
+#### 1. Backend
 ```bash
 cd backend
 # Create .env (see .env.example)
@@ -249,13 +251,49 @@ Notes:
 - Add it as `WIKIPEDIA_ACCESS_TOKEN` in `backend/.env`.
 - If omitted, Wikipedia requests may still work in some contexts, but authenticated access is recommended for reliability.
 
-### 2. Frontend
+#### 2. Frontend
 ```bash
 cd frontend
 # Create .env with VITE_API_URL=http://localhost:8000
 
 npm install
 npm run dev  # default: http://localhost:5173
+```
+
+### Method 2: Installation Through Docker
+
+You can run the full project with Docker (backend + frontend).
+
+### 1. Prepare environment
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Then update `backend/.env` with your credentials:
+- `OPENAI_API_KEY`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `USER_USERNAME`
+- `USER_PASSWORD`
+- optional: `TAVILY_API_KEY`, `GOOGLE_FACT_CHECK_API_KEY`, `WIKIPEDIA_ACCESS_TOKEN`
+
+### 2. Build and run
+
+```bash
+docker compose up --build -d
+```
+
+### 3. Open the app
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8000`
+- Health check: `http://localhost:8000/api/health`
+
+### 4. Stop
+
+```bash
+docker compose down
 ```
 
 ## How to Use
