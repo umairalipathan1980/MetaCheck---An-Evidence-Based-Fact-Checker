@@ -2,6 +2,8 @@
 
 FastAPI service exposing MetaCheck's verification workflow for the React frontend.
 
+For a detailed explanation of the design, architecture, and development process behind this code, please refer to the related article published in [Data Science Collective](https://shorturl.at/CnEaK)
+
 ## Modular Architecture
 
 The core engine has been refactored into focused modules for better maintainability:
