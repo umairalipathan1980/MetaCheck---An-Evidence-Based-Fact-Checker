@@ -2,6 +2,8 @@
 
 MetaCheck is an educational fact-checking tool designed to help students and educators learn how to evaluate information critically. Unlike commercial fact-checkers, MetaCheck's primary goal is educational transparency — showing students how AI systems verify claims, not just what verdict they reach.
 
+> **📖 Read More:** For a detailed explanation of the design, architecture, and development process behind MetaCheck, check out the companion article published in [**Data Science Collective**](https://shorturl.at/CnEaK).
+
 It:
 - Extracts verifiable claims from text
 - Searches web, Wikipedia, and fact-check APIs for evidence
