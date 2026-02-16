@@ -4,7 +4,7 @@ MetaCheck is an educational fact-checking tool designed to help students and edu
 
 > **📖 Read More:** For a detailed explanation of the design, architecture, and development process behind MetaCheck, check out the companion article published in [**Data Science Collective**](https://shorturl.at/CnEaK).
 
-It:
+MetaCheck:
 - Extracts verifiable claims from text
 - Searches web, Wikipedia, and fact-check APIs for evidence
 - Classifies domain credibility via a configurable taxonomy
